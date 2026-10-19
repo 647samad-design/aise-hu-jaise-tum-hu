@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17744a"/>
+      <stop offset="1" stop-color="#0b3724"/>
+    </linearGradient>
+    <linearGradient id="y" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6dc8b"/>
+      <stop offset="1" stop-color="#e2b227"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#y)" stroke-width="14"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="230" fill="url(#y)">1</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="54" fill="#fbf8ef" letter-spacing="6">RUPYA</text>
+</svg>
