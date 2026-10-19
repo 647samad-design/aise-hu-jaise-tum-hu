@@ -26,6 +26,10 @@ const paths = {
   grid: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z",
   spark: "M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8",
   external: "M14 4h6v6m0-6-9 9M18 14v6H4V6h6",
+  bell: "M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2Zm4 4h4",
+  download: "M12 4v11m-5-5 5 5 5-5M5 20h14",
+  qr: "M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h2v2h-2v-2Zm4 0h2v2h-2v-2Zm-4 4h2v2h-2v-2Zm4 0h2v2h-2v-2Z",
+  android: "M7 10h10v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7Zm0-1a5 5 0 0 1 10 0H7Zm2.5-4L8 3m6.5 2L16 3M4 11v5m16-5v5M10 18v3m4-3v3",
 } as const;
 
 export type IconName = keyof typeof paths;

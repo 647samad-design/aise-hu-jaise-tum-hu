@@ -32,6 +32,7 @@ export type Draw = {
   sold_tickets: number;
   status: "open" | "full" | "drawn" | "cancelled";
   ends_at: string | null;
+  opens_at?: string | null;
   seed_hash: string;
   seed_revealed: string | null;
   winner_ticket: number | null;
@@ -39,6 +40,40 @@ export type Draw = {
   proof: Record<string, unknown> | null;
   full_at: string | null;
   drawn_at: string | null;
+  created_at: string;
+};
+
+/** Ticket sales have not started yet. */
+export const isUpcoming = (d: Pick<Draw, "opens_at" | "status">) =>
+  d.status === "open" && !!d.opens_at && new Date(d.opens_at).getTime() > Date.now();
+
+export function longDate(iso: string): string {
+  return new Date(iso).toLocaleString("en-PK", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Karachi",
+  });
+}
+
+export function timeAgo(iso: string): string {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
+  return shortDate(iso);
+}
+
+export type Notification = {
+  id: number;
+  user_id: string | null;
+  kind: "welcome" | "topup" | "ticket" | "soldout" | "result" | "win" | "refund" | "draw" | "announcement";
+  title: string;
+  body: string | null;
+  link: string | null;
   created_at: string;
 };
 
@@ -50,4 +85,5 @@ export type Profile = {
   is_admin: boolean;
   balance: number;
   created_at: string;
+  notifications_seen_at?: string;
 };

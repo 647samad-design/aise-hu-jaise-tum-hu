@@ -79,6 +79,7 @@ export async function reviewTopup(id: number, approve: boolean, note: string): P
 export async function createDraw(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const endsRaw = String(formData.get("ends_at") ?? "");
+  const opensRaw = String(formData.get("opens_at") ?? "");
   const { error } = await supabase.rpc("create_draw", {
     p_title: String(formData.get("title") ?? ""),
     p_description: String(formData.get("description") ?? ""),
@@ -86,12 +87,38 @@ export async function createDraw(_prev: ActionResult | null, formData: FormData)
     p_ticket_price: Number(formData.get("ticket_price")),
     p_target: Number(formData.get("target")),
     p_max_per_user: Number(formData.get("max_per_user") || 0),
-    p_ends_at: endsRaw ? new Date(endsRaw).toISOString() : null,
+    p_ends_at: pktToIso(endsRaw),
+    p_opens_at: pktToIso(opensRaw),
   });
   if (error) return fail(error);
   revalidatePath("/admin");
   revalidatePath("/");
   return { ok: true, message: "Draw created. Its seed hash is now public." };
+}
+
+// <input type="datetime-local"> has no time zone. The admin types Pakistan time, but the server runs in UTC.
+function pktToIso(raw: string): string | null {
+  if (!raw) return null;
+  const d = new Date(`${raw.length === 16 ? `${raw}:00` : raw}+05:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export async function announce(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_announce", {
+    p_title: String(formData.get("title") ?? ""),
+    p_body: String(formData.get("body") ?? ""),
+    p_link: String(formData.get("link") ?? ""),
+  });
+  if (error) return fail(error);
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Sent. Every player will see it in their notifications." };
+}
+
+export async function markNotificationsSeen(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.rpc("mark_notifications_seen");
+  revalidatePath("/", "layout");
 }
 
 // Public randomness from the drand network, mixed into the result so even the admin

@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PRIVATE = ["/wallet", "/profile", "/tickets", "/admin"];
+const PRIVATE = ["/wallet", "/profile", "/tickets", "/admin", "/notifications"];
 const GUEST_ONLY = ["/login", "/signup", "/forgot-password"];
 
 const matches = (path: string, list: string[]) => list.some((p) => path === p || path.startsWith(`${p}/`));
@@ -58,5 +58,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons/|icon.svg|offline.html).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons/|icon.svg|offline.html|screenshots/|.well-known/|robots.txt|sitemap.xml|opengraph-image|twitter-image).*)"],
 };

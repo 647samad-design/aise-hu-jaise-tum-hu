@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/actions";
 import Icon from "@/components/Icon";
 
-export default function UserMenu({ name, email, isAdmin, needsPhone }: { name: string; email: string; isAdmin: boolean; needsPhone: boolean }) {
+export default function UserMenu({ name, email, isAdmin, needsPhone, unread = 0 }: { name: string; email: string; isAdmin: boolean; needsPhone: boolean; unread?: number }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const path = usePathname();
@@ -48,9 +48,11 @@ export default function UserMenu({ name, email, isAdmin, needsPhone }: { name: s
               <Icon name="alert" size={16} /> Add your phone to play
             </Link>
           )}
+          <Link role="menuitem" href="/notifications"><Icon name="bell" size={17} /> Notifications{unread > 0 && <span className="menu-count">{unread}</span>}</Link>
           <Link role="menuitem" href="/tickets"><Icon name="ticket" size={17} /> My tickets</Link>
           <Link role="menuitem" href="/wallet"><Icon name="wallet" size={17} /> Wallet</Link>
           <Link role="menuitem" href="/profile"><Icon name="user" size={17} /> Account settings</Link>
+          <Link role="menuitem" href="/download"><Icon name="download" size={17} /> Get the app</Link>
           {isAdmin && <Link role="menuitem" href="/admin"><Icon name="settings" size={17} /> Admin dashboard</Link>}
           <form action={signOut}>
             <button role="menuitem" className="menu-signout"><Icon name="logout" size={17} /> Sign out</button>

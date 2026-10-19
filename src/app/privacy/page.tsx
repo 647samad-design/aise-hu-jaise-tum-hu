@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Privacy policy · 1Rupya" };
+export const metadata: Metadata = { title: "Privacy policy · 1Rupya", alternates: { canonical: "/privacy" } };
 
 const SECTIONS: [string, string][] = [
   ["What we collect", "Your name, email address and mobile number; the payment details you submit for top-ups (amount, method, transaction ID, sender name); your tickets and wallet history; and basic technical data needed to keep you signed in."],

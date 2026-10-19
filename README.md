@@ -15,7 +15,12 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
 | Draws | Product cards with progress bar and deadline, per-person ticket cap, auto "sold out" state |
 | Fairness | Commit-reveal draw + public randomness (drand), `/verify/<draw>` page that re-computes the winner in the visitor's browser |
 | Admin | Dashboard numbers, approve/reject top-ups, create draws, draw winner, cancel + refund, user list |
-| PWA | Web manifest, service worker, offline page, "Add to Home Screen" banner |
+| Notifications | Bell + `/notifications`: payment received / approved / rejected, "you're in" after buying, sold out, result, **you won**, refunds, new and coming-soon draws, admin announcements to everyone |
+| Coming-soon draws | Admin sets *Tickets open at*; players see a countdown and are notified; buying is blocked until then |
+| Payment QR | Your EasyPaisa/JazzCash/bank QR ("scanner") on the Wallet page with a *Save QR* button for same-phone payments |
+| SEO | Sitemap with every draw, robots.txt, canonical URLs, Google structured data (Organization, WebSite, FAQ, breadcrumbs), share images for WhatsApp/Facebook (site + each draw), private pages set to noindex, Search Console verification |
+| Android / iPhone app | Installable app (PWA) with shortcuts and store-style screenshots, install banner, `/download` page with Android & iPhone steps and a QR for desktop visitors, optional APK via PWABuilder |
+| PWA | Web manifest, service worker (fast repeat loads, offline page, never caches money data) |
 | Safety | All money logic lives in SQL functions; browsers cannot edit balances or tickets (RLS + no write policies) |
 
 ## Setup (about 15 minutes)
@@ -47,6 +52,36 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
    `netlify.toml` configures the Next.js build, `.next` publish directory, and Next.js runtime so server-rendered
    pages and authentication routes are served correctly. Add your own domain later; only the Supabase redirect
    URLs need updating.
+
+## Payment QR ("scanner")
+
+1. Save your EasyPaisa / JazzCash / Raast QR image as `public/payment-qr.png` (PNG or JPG, square, at least 400 px).
+2. Set `NEXT_PUBLIC_PAY_QR_URL=/payment-qr.png` in your env vars and redeploy.
+
+The QR only makes paying easier. Players still submit the TRX ID, and you approve it in `/admin` after matching it
+with your payment history; the player then gets a notification and the money appears in their wallet.
+
+## SEO checklist after going live
+
+1. Set `NEXT_PUBLIC_SITE_URL` to your real domain (e.g. `https://1rupya.pk`) — sitemap, canonical URLs and share images use it.
+2. Google Search Console → add your domain → copy the HTML-tag code into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` → redeploy → Verify.
+3. Search Console → Sitemaps → submit `sitemap.xml`.
+4. Give every draw a clear title ("Samsung Galaxy A15 128GB") and a real photo — both appear in Google and in WhatsApp previews.
+
+## Android app
+
+**Easiest (recommended):** players open the site in Chrome and tap *Install app* (banner or `/download`). It installs
+like a normal app (icon, full screen, shortcuts) in a second, is about 1 MB, and updates itself.
+
+**APK file (optional):** go to [pwabuilder.com](https://www.pwabuilder.com), enter your live URL, choose *Android* →
+*Generate package*. You get an `.apk` (to share directly) and an `.aab`, plus a signing key — keep that key safe.
+Then set `ANDROID_PACKAGE_NAME` and `ANDROID_SHA256_FINGERPRINT` (both shown by PWABuilder) so
+`/.well-known/assetlinks.json` lets the APK open full-screen, upload the APK somewhere public and set
+`NEXT_PUBLIC_ANDROID_APK_URL` to show a *Download APK* button. Google Play only accepts real-money lottery /
+raffle apps from licensed operators in allowed countries, so don't plan on a Play Store listing without a licence.
+
+`public/screenshots/` holds the images Android shows in its install dialog; replace them with screenshots of your
+live site once you have real draws.
 
 ## How the 100-person lucky draw works
 
@@ -87,6 +122,8 @@ tampering attempts, winner re-check, cancel/refund). They run on any Postgres wi
 createdb t && psql -d t -f supabase/tests/00_stub_supabase.sql && psql -d t -f supabase/schema.sql
 psql -d t -f supabase/tests/01_flow.sql && psql -d t -f supabase/tests/02_cancel_refund.sql
 psql -d t -f supabase/tests/03_signup_profile.sql
+# notifications test expects a fresh database:
+createdb t2 && psql -d t2 -f supabase/tests/00_stub_supabase.sql && psql -d t2 -f supabase/schema.sql && psql -d t2 -f supabase/tests/04_notifications.sql
 ```
 
 ## Before you take real money

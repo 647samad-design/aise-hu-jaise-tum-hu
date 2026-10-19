@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Terms of use · 1Rupya" };
+export const metadata: Metadata = { title: "Terms of use · 1Rupya", alternates: { canonical: "/terms" } };
 
 const SECTIONS: [string, React.ReactNode][] = [
   ["Who can play", "You must be 18 or older and legally allowed to take part in prize draws where you live. One account per person; duplicate or fake accounts can be closed and their tickets voided."],

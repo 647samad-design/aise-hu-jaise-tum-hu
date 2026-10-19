@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import AdminDrawActions from "@/components/AdminDrawActions";
+import AdminAnnounceForm from "@/components/AdminAnnounceForm";
 import AdminDrawForm from "@/components/AdminDrawForm";
 import AdminTopupRow from "@/components/AdminTopupRow";
 import ProgressBar from "@/components/ProgressBar";
@@ -95,6 +96,12 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card p-5">
+        <h2 className="mb-1 font-display text-xl font-bold text-pine-800">Announce to all players</h2>
+        <p className="mb-3 text-xs text-pine-900/60">Appears in every player&apos;s notifications (bell icon). Use it to say when the next lucky draw opens.</p>
+        <AdminAnnounceForm />
       </section>
 
       <section className="card p-5">

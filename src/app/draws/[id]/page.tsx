@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import Icon from "@/components/Icon";
 import { Countdown, ShareButton } from "@/components/ClientBits";
 import { createClient } from "@/lib/supabase/server";
+import JsonLd from "@/components/JsonLd";
+import { SITE_URL } from "@/lib/site";
 import BuyTickets from "@/components/BuyTickets";
 import ProgressBar from "@/components/ProgressBar";
 import { getSessionProfile } from "@/lib/auth";
-import { pkr, type Draw } from "@/lib/format";
+import { isUpcoming, longDate, pkr, type Draw } from "@/lib/format";
+import { Notice } from "@/components/auth/fields";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: `${data.title} · 1Rupya`,
       description,
-      openGraph: { title: data.title, description, images: data.image_url ? [data.image_url] : undefined },
+      alternates: { canonical: `/draws/${id}` },
+      openGraph: { title: data.title, description, type: "website", url: `/draws/${id}` },
     };
   } catch {
     return { title: "Draw · 1Rupya" };
@@ -48,10 +52,21 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
 
   const left = draw.target_tickets - draw.sold_tickets;
   const maxQty = Math.max(0, Math.min(left, draw.max_per_user - myNumbers.length));
+  const upcoming = isUpcoming(draw);
   const iWon = draw.status === "drawn" && draw.winner_ticket !== null && myNumbers.includes(draw.winner_ticket);
 
   return (
     <div className="page">
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Draws", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: draw.title, item: `${SITE_URL}/draws/${draw.id}` },
+        ],
+      }}
+    />
     <Link href="/#draws" className="back-link"><Icon name="arrow-left" size={16} /> All draws</Link>
     <div className="mt-4 grid gap-8 md:grid-cols-2">
       <div className="card h-fit overflow-hidden md:sticky md:top-28">
@@ -67,7 +82,7 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
 
       <div className="space-y-5">
         <div>
-          <p className="eyebrow">{draw.status === "open" ? "LIVE DRAW" : draw.status === "full" ? "SOLD OUT" : draw.status === "drawn" ? "COMPLETED" : "CANCELLED"}</p>
+          <p className="eyebrow">{upcoming ? "COMING SOON" : draw.status === "open" ? "LIVE DRAW" : draw.status === "full" ? "SOLD OUT" : draw.status === "drawn" ? "COMPLETED" : "CANCELLED"}</p>
           <h1 className="mt-3 font-display text-4xl leading-tight tracking-tight text-pine-900">{draw.title}</h1>
           {draw.description && <p className="mt-3 whitespace-pre-line leading-relaxed text-pine-900/75">{draw.description}</p>}
         </div>
@@ -80,10 +95,25 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
           <ProgressBar sold={draw.sold_tickets} target={draw.target_tickets} />
           <p className="flex justify-between text-sm text-pine-900/70">
             <span>Max {draw.max_per_user} tickets per person</span>
-            {draw.ends_at && draw.status === "open" && <Countdown endsAt={draw.ends_at} />}
+            {draw.ends_at && draw.status === "open" && !upcoming && <Countdown endsAt={draw.ends_at} />}
           </p>
 
-          {draw.status === "open" && (
+          {upcoming && draw.opens_at && (
+            <div className="opens-box">
+              <p className="eyebrow">TICKETS OPEN</p>
+              <p className="opens-when">{longDate(draw.opens_at)}</p>
+              <Countdown endsAt={draw.opens_at} prefix="Opens in" />
+              <p className="opens-hint">
+                {user
+                  ? "You'll get a notification in the app. Top up your wallet now so you're ready the moment it opens."
+                  : "Create a free account now so you're ready the moment it opens."}
+              </p>
+              <Link href={user ? "/wallet" : `/signup?next=/draws/${draw.id}`} className="btn-gold w-full">
+                {user ? "Top up wallet" : "Create free account"}
+              </Link>
+            </div>
+          )}
+          {draw.status === "open" && !upcoming && (
             <BuyTickets
               drawId={draw.id}
               price={draw.ticket_price}
@@ -119,6 +149,13 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
               Verify this result yourself
             </Link>
           </div>
+        )}
+
+        {myNumbers.length > 0 && (draw.status === "open" || draw.status === "full") && (
+          <Notice tone="success">
+            <b>You&apos;re participating in this draw</b> with {myNumbers.length} ticket{myNumbers.length > 1 ? "s" : ""}. We&apos;ll notify you in the app
+            when it sells out and when the winner is drawn.
+          </Notice>
         )}
 
         {myNumbers.length > 0 && (

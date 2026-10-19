@@ -4,7 +4,7 @@ import Icon from "@/components/Icon";
 import { getPublicDraws } from "@/lib/public-draws";
 import { shortDate } from "@/lib/format";
 
-export const metadata: Metadata = { title: "Winners · 1Rupya" };
+export const metadata: Metadata = { title: "Winners · 1Rupya", alternates: { canonical: "/winners" } };
 export const dynamic = "force-dynamic";
 
 export default async function WinnersPage() {

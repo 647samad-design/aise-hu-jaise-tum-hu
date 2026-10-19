@@ -5,7 +5,7 @@ import NewPasswordForm from "@/components/auth/NewPasswordForm";
 import { Notice } from "@/components/auth/fields";
 import { getSessionProfile } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Choose a new password · 1Rupya" };
+export const metadata: Metadata = { title: "Choose a new password · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function ResetPasswordPage() {
