@@ -9,7 +9,9 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
 
 | Area | Features |
 | --- | --- |
-| Users | Google or email sign-in, profile (name + phone), wallet, top-up by TRX ID, buy tickets, see own ticket numbers |
+| Accounts | Sign up with email + password (name, phone, 18+ consent, password strength meter), sign in with password, Google or a one-time email link, forgot / reset password, change password, protected pages with return-to-where-you-were redirects |
+| Players | Wallet with copy-to-clipboard payment numbers, top-up by TRX ID, buy tickets with confirmation, **My tickets** page (filters, wins, spend), account settings |
+| Experience | Premium forest/champagne design across every page, phone bottom tab bar, user menu, live countdowns, share + WhatsApp buttons, toasts, 404 / error / loading screens, Terms and Privacy pages |
 | Draws | Product cards with progress bar and deadline, per-person ticket cap, auto "sold out" state |
 | Fairness | Commit-reveal draw + public randomness (drand), `/verify/<draw>` page that re-computes the winner in the visitor's browser |
 | Admin | Dashboard numbers, approve/reject top-ups, create draws, draw winner, cancel + refund, user list |
@@ -22,6 +24,10 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
 2. **Database** — Supabase → SQL Editor → paste all of `supabase/schema.sql` → Run.
 3. **Auth URLs** — Supabase → Authentication → URL Configuration: set *Site URL* to your site and add
    `https://YOUR-SITE/auth/callback` and `http://localhost:3000/auth/callback` to *Redirect URLs*.
+   **Email + password:** Authentication → Providers → Email must be enabled (it is by default). Keep
+   *Confirm email* ON for production (new users get a confirmation link); turn it OFF only for quick local testing.
+   Set *Minimum password length* to 8. For real traffic, add your own SMTP (Authentication → Emails → SMTP) —
+   Supabase's built-in mailer only sends a few emails per hour.
 4. **Google sign-in (optional)** — Authentication → Providers → Google: create OAuth credentials in Google Cloud
    Console and paste the client ID/secret. Email magic-link works without this.
 5. **Env vars** — copy `.env.example` to `.env.local` and fill it in (Supabase URL + anon key from Project Settings → API,
@@ -35,7 +41,9 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
    ```sql
    update public.profiles set is_admin = true where email = 'you@example.com';
    ```
-8. **Deploy** — import the GitHub repo into Vercel (or Netlify), add the same env vars, deploy. For Netlify,
+8. **Already running an older version?** Re-run `supabase/schema.sql` in the SQL editor. It is safe to run again
+   (keeps your data) and installs the updated sign-up trigger that saves the name and phone from the sign-up form.
+9. **Deploy** — import the GitHub repo into Vercel (or Netlify), add the same env vars, deploy. For Netlify,
    `netlify.toml` configures the Next.js build, `.next` publish directory, and Next.js runtime so server-rendered
    pages and authentication routes are served correctly. Add your own domain later; only the Supabase redirect
    URLs need updating.
@@ -78,6 +86,7 @@ tampering attempts, winner re-check, cancel/refund). They run on any Postgres wi
 ```bash
 createdb t && psql -d t -f supabase/tests/00_stub_supabase.sql && psql -d t -f supabase/schema.sql
 psql -d t -f supabase/tests/01_flow.sql && psql -d t -f supabase/tests/02_cancel_refund.sql
+psql -d t -f supabase/tests/03_signup_profile.sql
 ```
 
 ## Before you take real money
@@ -86,12 +95,17 @@ psql -d t -f supabase/tests/01_flow.sql && psql -d t -f supabase/tests/02_cancel
 - **Payments:** EasyPaisa/JazzCash can freeze personal accounts that receive many small transfers. Prefer a business
   account, and keep every wallet balance withdrawable (the *Owed to wallets* tile in `/admin` shows your liability).
 - **Privacy:** you store names, phone numbers and TRX IDs. Never commit `.env.local` or tokens to Git.
+- **Terms / Privacy pages:** `/terms` and `/privacy` are a plain-language starting point. Review them (prize claim
+  window, refund rules, contact details) with your lawyer before launch.
 - Start with a small group (20-50 people) and tell them it is a test.
 
 ## Project layout
 
 ```
-src/app/            pages: / , /draws/[id], /wallet, /profile, /winners, /verify/[id], /admin, /login
+src/app/            pages: / , /draws/[id], /tickets, /wallet, /profile, /winners, /verify/[id], /admin,
+                    /login, /signup, /forgot-password, /reset-password, /terms, /privacy
+src/app/auth/       auth server actions + /auth/callback (Google, email links, password recovery)
+src/middleware.ts   session refresh + private-page guard
 src/app/actions.ts  server actions (thin wrappers around the SQL functions)
 src/components/     UI pieces (BuyTickets, TopupForm, Admin*, VerifyDraw, RegisterSW ...)
 src/lib/            Supabase clients, formatting helpers

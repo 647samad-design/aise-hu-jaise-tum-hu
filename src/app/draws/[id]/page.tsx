@@ -1,11 +1,31 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Icon from "@/components/Icon";
+import { Countdown, ShareButton } from "@/components/ClientBits";
+import { createClient } from "@/lib/supabase/server";
 import BuyTickets from "@/components/BuyTickets";
 import ProgressBar from "@/components/ProgressBar";
 import { getSessionProfile } from "@/lib/auth";
-import { pkr, timeLeft, type Draw } from "@/lib/format";
+import { pkr, type Draw } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const { data } = await (await createClient()).from("draws").select("title, description, image_url, ticket_price").eq("id", id).single();
+    if (!data) return { title: "Draw not found · 1Rupya" };
+    const description = `Tickets from PKR ${data.ticket_price}. ${data.description ?? "Provably fair draw on 1Rupya."}`.slice(0, 160);
+    return {
+      title: `${data.title} · 1Rupya`,
+      description,
+      openGraph: { title: data.title, description, images: data.image_url ? [data.image_url] : undefined },
+    };
+  } catch {
+    return { title: "Draw · 1Rupya" };
+  }
+}
 
 export default async function DrawPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,13 +48,14 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
 
   const left = draw.target_tickets - draw.sold_tickets;
   const maxQty = Math.max(0, Math.min(left, draw.max_per_user - myNumbers.length));
-  const t = timeLeft(draw.ends_at);
   const iWon = draw.status === "drawn" && draw.winner_ticket !== null && myNumbers.includes(draw.winner_ticket);
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
-      <div className="card overflow-hidden">
-        <div className="aspect-square bg-gradient-to-br from-pine-100 to-pine-200">
+    <div className="page">
+    <Link href="/#draws" className="back-link"><Icon name="arrow-left" size={16} /> All draws</Link>
+    <div className="mt-4 grid gap-8 md:grid-cols-2">
+      <div className="card h-fit overflow-hidden md:sticky md:top-28">
+        <div className="aspect-[4/3] bg-gradient-to-br from-pine-100 to-pine-200 md:aspect-square">
           {draw.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={draw.image_url} alt={draw.title} className="h-full w-full object-cover" />
@@ -46,8 +67,9 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
 
       <div className="space-y-5">
         <div>
-          <h1 className="font-display text-3xl font-bold leading-tight text-pine-900">{draw.title}</h1>
-          {draw.description && <p className="mt-2 text-pine-900/75">{draw.description}</p>}
+          <p className="eyebrow">{draw.status === "open" ? "LIVE DRAW" : draw.status === "full" ? "SOLD OUT" : draw.status === "drawn" ? "COMPLETED" : "CANCELLED"}</p>
+          <h1 className="mt-3 font-display text-4xl leading-tight tracking-tight text-pine-900">{draw.title}</h1>
+          {draw.description && <p className="mt-3 whitespace-pre-line leading-relaxed text-pine-900/75">{draw.description}</p>}
         </div>
 
         <div className="card space-y-4 p-4">
@@ -58,7 +80,7 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
           <ProgressBar sold={draw.sold_tickets} target={draw.target_tickets} />
           <p className="flex justify-between text-sm text-pine-900/70">
             <span>Max {draw.max_per_user} tickets per person</span>
-            {t && draw.status === "open" && <span>{t}</span>}
+            {draw.ends_at && draw.status === "open" && <Countdown endsAt={draw.ends_at} />}
           </p>
 
           {draw.status === "open" && (
@@ -70,6 +92,7 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
               signedIn={!!user}
               hasPhone={!!profile?.phone}
               balance={profile?.balance ?? 0}
+              owned={myNumbers.length}
             />
           )}
           {draw.status === "full" && (
@@ -116,6 +139,8 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
 
+        <ShareButton title={draw.title} text={`Win ${draw.title} with a PKR ${draw.ticket_price} ticket on 1Rupya`} />
+
         <details className="card p-4 text-sm">
           <summary className="cursor-pointer font-semibold text-pine-800">How is the winner chosen?</summary>
           <p className="mt-2 text-pine-900/75">
@@ -128,6 +153,7 @@ export default async function DrawPage({ params }: { params: Promise<{ id: strin
           </p>
         </details>
       </div>
+    </div>
     </div>
   );
 }

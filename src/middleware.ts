@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Keeps the Supabase session cookie fresh on every request.
+const PRIVATE = ["/wallet", "/profile", "/tickets", "/admin"];
+const GUEST_ONLY = ["/login", "/signup", "/forgot-password"];
+
+const matches = (path: string, list: string[]) => list.some((p) => path === p || path.startsWith(`${p}/`));
+
+// Keeps the Supabase session cookie fresh on every request and guards private pages.
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -22,10 +27,36 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+
+  const redirectKeepingCookies = (to: URL) => {
+    const r = NextResponse.redirect(to);
+    response.cookies.getAll().forEach((c) => r.cookies.set(c));
+    return r;
+  };
+
+  if (!user && matches(path, PRIVATE)) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/login";
+    to.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+    return redirectKeepingCookies(to);
+  }
+
+  if (user && matches(path, GUEST_ONLY)) {
+    const to = request.nextUrl.clone();
+    const next = request.nextUrl.searchParams.get("next");
+    to.pathname = next && next.startsWith("/") && !next.startsWith("//") ? next.split("?")[0] : "/";
+    to.search = "";
+    return redirectKeepingCookies(to);
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons/|offline.html).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons/|icon.svg|offline.html).*)"],
 };

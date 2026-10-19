@@ -1,17 +1,17 @@
 import Link from "next/link";
 import ProgressBar from "@/components/ProgressBar";
-import { pkr, timeLeft, type Draw } from "@/lib/format";
+import { Countdown } from "@/components/ClientBits";
+import { pkr, type Draw } from "@/lib/format";
 
 export default function DrawCard({ draw }: { draw: Draw }) {
   const left = draw.target_tickets - draw.sold_tickets;
-  const t = timeLeft(draw.ends_at);
 
   return (
-    <Link href={`/draws/${draw.id}`} className="card group block overflow-hidden transition hover:-translate-y-0.5">
+    <Link href={`/draws/${draw.id}`} className="card draw-card group block overflow-hidden">
       <div className="relative aspect-[4/3] bg-gradient-to-br from-pine-100 to-pine-200">
         {draw.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={draw.image_url} alt={draw.title} className="h-full w-full object-cover" loading="lazy" />
+          <img src={draw.image_url} alt={draw.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" loading="lazy" />
         ) : (
           <div className="grid h-full place-items-center font-display text-6xl text-pine-500/40">1</div>
         )}
@@ -25,11 +25,11 @@ export default function DrawCard({ draw }: { draw: Draw }) {
         )}
       </div>
       <div className="space-y-3 p-4">
-        <h3 className="font-display text-lg font-bold leading-snug text-pine-900">{draw.title}</h3>
+        <h3 className="font-display text-xl leading-snug text-pine-900 group-hover:text-pine-700">{draw.title}</h3>
         <ProgressBar sold={draw.sold_tickets} target={draw.target_tickets} />
-        <p className="flex justify-between text-sm text-pine-900/70">
+        <p className="flex items-center justify-between text-sm text-pine-900/70">
           <span>{left > 0 ? `${left.toLocaleString()} left` : "All tickets sold"}</span>
-          {t && <span>{t}</span>}
+          {draw.ends_at && draw.status === "open" && <Countdown endsAt={draw.ends_at} />}
         </p>
       </div>
     </Link>
