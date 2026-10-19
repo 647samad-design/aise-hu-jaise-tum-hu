@@ -35,8 +35,10 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
    ```sql
    update public.profiles set is_admin = true where email = 'you@example.com';
    ```
-8. **Deploy** — import the GitHub repo into Vercel (or Netlify), add the same env vars, deploy. Netlify needs the
-   "Next.js" runtime (auto-detected). Add your own domain later; only the Supabase redirect URLs need updating.
+8. **Deploy** — import the GitHub repo into Vercel (or Netlify), add the same env vars, deploy. For Netlify,
+   `netlify.toml` configures the Next.js build, `.next` publish directory, and Next.js runtime so server-rendered
+   pages and authentication routes are served correctly. Add your own domain later; only the Supabase redirect
+   URLs need updating.
 
 ## How the 100-person lucky draw works
 
