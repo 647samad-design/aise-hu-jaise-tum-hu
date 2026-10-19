@@ -17,12 +17,12 @@ const config: Config = {
           900: "#0b3724",
         },
         gold: {
-          300: "#e0edb1",
-          400: "#cfdf8e",
-          500: "#b8cd6a",
-          600: "#627a21",
+          300: "#f6dc8b",
+          400: "#f0c94f",
+          500: "#e2b227",
+          600: "#bf9112",
         },
-        cream: "#f6f5ef",
+        cream: "#fbf8ef",
       },
       fontFamily: {
         display: ["Georgia", "'Times New Roman'", "serif"],
