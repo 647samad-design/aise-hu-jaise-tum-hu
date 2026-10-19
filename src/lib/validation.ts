@@ -43,6 +43,11 @@ export function safeNext(raw: unknown, fallback = "/"): string {
 /** Turns Supabase auth error text into something a player understands. */
 export function friendlyAuthError(message: string | undefined): string {
   const m = (message ?? "").toLowerCase();
+  // Supabase answered with a web page instead of JSON: the project URL in the env vars is wrong.
+  if (m.includes("is not valid json") || m.includes("unexpected token '<'") || m.includes("<!doctype"))
+    return "Sign-up is temporarily unavailable (server setup). Site owner: open /setup-check — NEXT_PUBLIC_SUPABASE_URL must be https://YOUR-PROJECT.supabase.co.";
+  if (m.includes("fetch failed") || m.includes("failed to fetch") || m.includes("enotfound"))
+    return "Can't reach the sign-in service right now. Please try again in a minute.";
   if (m.includes("invalid login credentials")) return "Email or password is incorrect.";
   if (m.includes("email not confirmed")) return "Please confirm your email first. We can send the link again.";
   if (m.includes("already registered") || m.includes("already been registered"))
