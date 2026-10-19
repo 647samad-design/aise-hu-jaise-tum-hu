@@ -32,7 +32,7 @@ export default function RegisterSW() {
   if (!installEvent || hidden) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-pine-900 p-3 text-white shadow-card">
+    <div className="install-banner fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-pine-900 p-3 text-white shadow-card">
       <div className="flex-1 text-sm">
         <p className="font-semibold">Add 1Rupya to Home Screen</p>
         <p className="text-pine-100/80">Open it like an app, one tap.</p>

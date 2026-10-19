@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/validation";
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -27,6 +28,9 @@ export async function saveProfile(_prev: ActionResult | null, formData: FormData
   });
   if (error) return fail(error);
   revalidatePath("/", "layout");
+  // First-time setup: send the player back to where they were heading.
+  const next = formData.get("next");
+  if (typeof next === "string" && next) redirect(safeNext(next));
   return { ok: true, message: "Profile saved" };
 }
 

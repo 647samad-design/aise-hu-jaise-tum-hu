@@ -39,7 +39,7 @@ export default async function Home() {
         <p className="draw-disclaimer">18+ only. A ticket is a chance to win, never a guarantee. Check each draw’s price, deadline and ticket limit before entering.</p>
       </section>
 
-      <section id="how-it-works" className="how-section"><div className="how-intro"><p className="eyebrow">A SIMPLE START</p><h2>Three steps.<br />Nothing hidden.</h2><p>From your first rupya to the final result, here’s how it works.</p><Link href="/login" className="text-link">Get started <Icon name="arrow" /></Link></div><div className="steps">{[
+      <section id="how-it-works" className="how-section"><div className="how-intro"><p className="eyebrow">A SIMPLE START</p><h2>Three steps.<br />Nothing hidden.</h2><p>From your first rupya to the final result, here’s how it works.</p><Link href="/signup" className="text-link">Get started <Icon name="arrow" /></Link></div><div className="steps">{[
         ["01", "wallet", "Top up your wallet", "Add PKR 50 or more using EasyPaisa or JazzCash. Your payment is manually checked before credit is added."],
         ["02", "ticket", "Choose your possibility", "Pick an open draw, review its rules and buy tickets. Your assigned ticket numbers appear in your account."],
         ["03", "shield", "Check the result", "Once every ticket sells, the admin runs the draw. The published proof lets you independently verify the winner."],

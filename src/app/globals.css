@@ -17,13 +17,13 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-pine-700 text-white shadow-card hover:bg-pine-800;
+    @apply btn bg-pine-900 text-cream hover:bg-pine-700;
   }
   .btn-gold {
-    @apply btn bg-gradient-to-b from-gold-300 to-gold-500 text-ink shadow-card hover:from-gold-400 hover:to-gold-500;
+    @apply btn bg-gold-400 text-pine-900 hover:bg-gold-300;
   }
   .btn-ghost {
     @apply btn border border-pine-200 bg-white text-pine-800 hover:bg-pine-50;
@@ -32,7 +32,7 @@ body {
     @apply btn bg-red-600 text-white hover:bg-red-700;
   }
   .card {
-    @apply rounded-2xl bg-white shadow-card ring-1 ring-black/5;
+    @apply rounded-xl bg-white shadow-card ring-1 ring-pine-900/5;
   }
   .input {
     @apply w-full rounded-xl border border-pine-200 bg-white px-4 py-3 text-base outline-none transition focus:border-pine-500 focus:ring-2 focus:ring-pine-200;
@@ -44,7 +44,7 @@ body {
 
 :root { --forest: #103f34; --muted: #65756b; --champagne: #e8cf94; }
 html { scroll-behavior: smooth; scroll-padding-top: 105px; }
-body { background: #f8f8f3; font-family: 'Avenir Next', 'Trebuchet MS', sans-serif; }
+body { background: #f8f8f3; font-family: Manrope, 'Avenir Next', system-ui, -apple-system, 'Segoe UI', sans-serif; }
 ::selection { background: #e8cf94; color: #103f34; }
 a, button, summary { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid #a27b32; outline-offset: 5px; }
@@ -52,7 +52,7 @@ a, button, summary { -webkit-tap-highlight-color: transparent; }
 .nav-inner { max-width: 1240px; min-height: 88px; margin: auto; padding: 12px 28px; display: flex; align-items: center; gap: 24px; }
 .brand-mark { display: grid; place-items: center; height: 39px; width: 34px; border-radius: 10px 3px 10px 3px; background: var(--forest); color: var(--champagne); font-family: Georgia, serif; font-size: 29px; }
 .brand-name { font-size: 25px; font-weight: 700; letter-spacing: -1.2px; color: var(--forest); }
-.nav-links { display: flex; gap: 28px; margin-left: 58px; font-size: 13px; color: #4e6257; }
+.nav-links { display: flex; gap: 28px; margin-left: 48px; font-size: 13px; font-weight: 500; color: #4e6257; }
 .nav-links a:hover, .text-link:hover { color: #a27b32; }
 .site-main { max-width: 1240px; margin: auto; padding: 32px 28px 0; min-height: 65vh; }
 .premium-hero { position: relative; display: grid; grid-template-columns: 1.14fr 1fr; min-height: 565px; border-radius: 10px; overflow: hidden; background: #103f34; color: #faf8ed; }

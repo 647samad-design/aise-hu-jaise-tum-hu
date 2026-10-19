@@ -1,10 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Icon from "@/components/Icon";
 import { redirect } from "next/navigation";
 import TopupForm from "@/components/TopupForm";
 import { getSessionProfile } from "@/lib/auth";
 import { pkr, shortDate } from "@/lib/format";
 
+export const metadata: Metadata = { title: "Wallet · 1Rupya" };
 export const dynamic = "force-dynamic";
+
+const KIND: Record<string, string> = { topup: "Top-up", ticket: "Tickets bought", refund: "Refund", adjust: "Adjustment" };
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-gold-300/40 text-gold-600",
@@ -14,7 +19,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function WalletPage() {
   const { supabase, user, profile } = await getSessionProfile();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?next=/wallet");
 
   const [{ data: topups }, { data: txns }] = await Promise.all([
     supabase.from("topups").select("id, amount, trx_id, status, admin_note, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
@@ -22,21 +27,34 @@ export default async function WalletPage() {
   ]);
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6">
-      <section className="rounded-3xl bg-gradient-to-br from-pine-800 to-ink p-6 text-white shadow-card">
-        <p className="text-sm text-pine-100/80">Wallet balance</p>
-        <p className="font-display text-5xl font-bold text-gold-400">{pkr(profile?.balance ?? 0)}</p>
+    <div className="page">
+      <header className="page-head">
+        <p className="eyebrow">YOUR MONEY</p>
+        <h1>Wallet</h1>
+      </header>
+      <div className="wallet-grid">
+      <div className="space-y-6">
+      <section className="balance-card">
+        <p className="eyebrow">AVAILABLE BALANCE</p>
+        <p className="balance-amount">{pkr(profile?.balance ?? 0)}</p>
+        <p className="balance-note">Use it to buy tickets in any open draw. Refunds from cancelled draws land here.</p>
+        <div className="balance-actions">
+          <a href="#add-money" className="btn-gold">Add money</a>
+          <Link href="/#draws" className="balance-link">Browse draws <Icon name="arrow" size={16} /></Link>
+        </div>
         {!profile?.phone && (
-          <Link href="/profile" className="btn-gold mt-4">Complete your profile to start playing</Link>
+          <Link href="/profile?welcome=1&next=/wallet" className="balance-warn"><Icon name="alert" size={16} /> Add your phone number to start playing</Link>
         )}
       </section>
 
       <TopupForm />
+      </div>
+      <div className="space-y-6">
 
-      <section className="card p-5">
-        <h2 className="mb-3 font-display text-xl font-bold text-pine-800">Your top-ups</h2>
+      <section className="panel">
+        <h2 className="panel-title mb-3">Top-up requests</h2>
         {(topups ?? []).length === 0 ? (
-          <p className="text-sm text-pine-900/60">No top-ups yet.</p>
+          <p className="text-sm text-pine-900/60">No top-ups yet. After you pay, submit the transaction ID and it will appear here.</p>
         ) : (
           <ul className="divide-y divide-black/5">
             {topups!.map((t) => (
@@ -46,30 +64,32 @@ export default async function WalletPage() {
                   <p className="text-xs text-pine-900/60">TRX {t.trx_id} · {shortDate(t.created_at)}</p>
                   {t.admin_note && <p className="text-xs text-pine-900/60">{t.admin_note}</p>}
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLE[t.status]}`}>{t.status}</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLE[t.status]}`}>{t.status}</span>
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="card p-5">
-        <h2 className="mb-3 font-display text-xl font-bold text-pine-800">Wallet history</h2>
+      <section className="panel">
+        <h2 className="panel-title mb-3">Wallet history</h2>
         {(txns ?? []).length === 0 ? (
-          <p className="text-sm text-pine-900/60">Nothing yet.</p>
+          <p className="text-sm text-pine-900/60">No activity yet.</p>
         ) : (
           <ul className="divide-y divide-black/5">
             {txns!.map((t) => (
               <li key={t.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="capitalize">{t.kind}<span className="ml-2 text-xs text-pine-900/50">{shortDate(t.created_at)}</span></span>
+                <span>{KIND[t.kind] ?? t.kind}<span className="ml-2 text-xs text-pine-900/50">{shortDate(t.created_at)}</span></span>
                 <span className={t.amount >= 0 ? "font-semibold text-pine-700" : "font-semibold text-red-600"}>
-                  {t.amount >= 0 ? "+" : ""}{t.amount}
+                  {t.amount >= 0 ? "+" : "−"}{pkr(Math.abs(t.amount))}
                 </span>
               </li>
             ))}
           </ul>
         )}
       </section>
+    </div>
+    </div>
     </div>
   );
 }

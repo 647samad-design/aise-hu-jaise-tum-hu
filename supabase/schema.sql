@@ -20,19 +20,38 @@ create table if not exists public.profiles (
   created_at  timestamptz not null default now()
 );
 
--- Auto-create a profile when someone signs up (Google or email).
+-- Auto-create a profile when someone signs up (Google, email link or email + password).
+-- The sign-up form sends full_name and phone as user metadata; the phone is kept only if it is a
+-- valid Pakistani mobile number (same rule as update_profile), otherwise the user adds it on /profile.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare v_phone text := regexp_replace(coalesce(new.raw_user_meta_data->>'phone', ''), '[\s-]', '', 'g');
+        v_name  text := nullif(trim(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '')), '');
 begin
-  insert into public.profiles (id, email, full_name)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'))
+  if v_phone !~ '^(03[0-9]{9}|\+923[0-9]{9})$' then v_phone := null; end if;
+  insert into public.profiles (id, email, full_name, phone)
+  values (new.id, new.email, left(v_name, 80), v_phone)
   on conflict (id) do nothing;
+  return new;
+end $$;
+
+-- Keep profiles.email in sync if a user changes their login email.
+create or replace function public.handle_user_email_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.profiles set email = new.email where id = new.id;
   return new;
 end $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users for each row execute function public.handle_new_user();
+
+drop trigger if exists on_auth_user_email_changed on auth.users;
+create trigger on_auth_user_email_changed
+  after update of email on auth.users for each row
+  when (old.email is distinct from new.email)
+  execute function public.handle_user_email_change();
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
