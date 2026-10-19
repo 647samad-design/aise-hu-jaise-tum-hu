@@ -7,24 +7,21 @@ export default async function Nav() {
   const { user, profile } = await getSessionProfile();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/5 bg-cream/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4 flex-wrap">
+    <header className="sticky top-0 z-40 border-b border-black/5 bg-cream/90 backdrop-blur">
+      <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-pine-900 font-display text-lg font-bold text-gold-300">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-pine-600 to-pine-900 font-display text-lg font-bold text-gold-400 ring-2 ring-gold-400">
             1
           </span>
-          <span className="brand-name text-pine-900">Rupya</span>
+          <span className="font-display text-xl font-bold text-pine-800">Rupya</span>
         </Link>
 
-        <nav aria-label="Main navigation" className="ml-auto flex flex-wrap items-center gap-1 text-sm font-medium">
-          <Link href="/#draws" className="hidden rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50 sm:block">Explore draws</Link>
-          <Link href="/#help" className="hidden rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50 md:block">Help</Link>
+        <nav className="ml-auto flex items-center gap-1 text-sm font-medium">
           <Link href="/winners" className="rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50">
             Winners
           </Link>
           {user ? (
             <>
-              <Link href="/profile" className="rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50">Profile</Link>
               {profile?.is_admin && (
                 <Link href="/admin" className="rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50">
                   Admin
