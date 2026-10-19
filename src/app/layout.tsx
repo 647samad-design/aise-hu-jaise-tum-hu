@@ -22,12 +22,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <a href="#main-content" className="skip-link">Skip to content</a>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-        <footer className="mx-auto max-w-5xl px-4 pb-24 pt-6 text-center text-xs text-pine-900/60">
+        <main id="main-content" className="mx-auto max-w-7xl px-5 py-6 sm:px-8">{children}</main>
+        <footer className="mx-auto max-w-7xl px-4 pb-24 pt-6 text-center text-xs text-pine-900/60">
           <p>
-            1Rupya · 18+ only · Winners are picked by a public, verifiable formula, never by hand.
+            1Rupya · Small tickets. Big possibilities. · Pakistan
           </p>
+          <p className="mt-3">18+ only. Entries do not guarantee a prize. Play responsibly.</p>
+          <div className="mt-5 flex justify-center gap-6"><a href="/#help">Help & FAQs</a><a href="/winners">Draw results</a><a href="/wallet">Your wallet</a></div>
         </footer>
         <RegisterSW />
       </body>

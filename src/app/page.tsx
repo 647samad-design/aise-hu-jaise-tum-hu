@@ -1,5 +1,5 @@
 import Link from "next/link";
-import DrawCard from "@/components/DrawCard";
+import DrawExplorer from "@/components/DrawExplorer";
 import { createClient } from "@/lib/supabase/server";
 import type { Draw } from "@/lib/format";
 
@@ -7,57 +7,29 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("draws")
-    .select("*")
-    .in("status", ["open", "full"])
-    .order("created_at", { ascending: false });
-  const draws = (data ?? []) as Draw[];
-
-  return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-pine-800 to-ink p-6 text-white shadow-card sm:p-10">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-gold-300">Tiny ticket · real prize</p>
-        <h1 className="font-display text-3xl font-bold leading-tight sm:text-5xl">
-          Win a gadget for <span className="text-gold-400">PKR 1</span>.
-        </h1>
-        <p className="mt-3 max-w-xl text-pine-100/90">
-          Every draw only runs when <b>every ticket is sold</b>. The winner is picked by a public formula
-          that anyone can re-check. No hand-picked winners, ever.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a href="#draws" className="btn-gold">See live draws</a>
-          <Link href="/winners" className="btn bg-white/10 text-white hover:bg-white/20">Past winners</Link>
-        </div>
-      </section>
-
-      <section className="grid gap-3 sm:grid-cols-3">
-        {[
-          ["1. Top up", "Add PKR 50+ to your wallet via EasyPaisa or JazzCash."],
-          ["2. Buy tickets", "Spend PKR 1-2 per ticket. Your numbers appear instantly."],
-          ["3. Fair draw", "When the last ticket sells, the winner is drawn and proven publicly."],
-        ].map(([t, d]) => (
-          <div key={t} className="card p-4">
-            <p className="font-display text-lg font-bold text-pine-800">{t}</p>
-            <p className="mt-1 text-sm text-pine-900/70">{d}</p>
-          </div>
-        ))}
-      </section>
-
-      <section id="draws" className="scroll-mt-20">
-        <h2 className="mb-4 font-display text-2xl font-bold text-pine-900">Live draws</h2>
-        {draws.length === 0 ? (
-          <div className="card p-8 text-center text-pine-900/70">
-            No draws are open right now. Check back soon.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {draws.map((d) => (
-              <DrawCard key={d.id} draw={d} />
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
+  const { data, error } = await supabase.from("draws").select("*").in("status", ["open", "full"]).order("created_at", { ascending: false });
+  return <>
+    <section className="hero-grid">
+      <div className="hero-copy">
+        <p className="eyebrow"><span className="live-dot" /> SMALL TICKETS. BIG POSSIBILITIES.</p>
+        <h1>A little rupya.<br />A <em>big</em> what if.</h1>
+        <p className="hero-description">The gadgets on your wishlist, a little closer. Enter a draw from PKR 1 and follow every step, from your first ticket to the final result.</p>
+        <div className="mt-8 flex flex-wrap gap-3"><a href="#draws" className="btn-primary">Explore live draws <span aria-hidden="true">↗</span></a><a href="#how-it-works" className="btn-ghost">How it works</a></div>
+        <p className="mt-7 text-xs text-pine-900/60">18+ only <span className="mx-2">·</span> EasyPaisa & JazzCash top-ups <span className="mx-2">·</span> Public draw verification</p>
+      </div>
+      <div className="hero-art" aria-label="An illustrated ticket showing entries from one Pakistani rupee" role="img">
+        <span className="art-caption">A SMALL START. A BIG POSSIBILITY.</span><div className="orbit orbit-one" /><div className="orbit orbit-two" />
+        <div className="ticket-art"><div className="ticket-top"><span>1RUPYA</span><span>ENTRY TICKET</span></div><div className="ticket-value"><span>PKR</span>1<span>FROM JUST</span></div><div className="ticket-bottom"><span>YOUR NEXT<br />WHAT IF.</span><span className="barcode" /></div></div>
+        <span className="art-star star-one">✳</span><span className="art-star star-two">✳</span><div className="art-note"><span className="live-dot" /> Small entry. Real possibility.</div><span className="art-edition">THE EVERYDAY POSSIBILITY CLUB / PK</span>
+      </div>
+    </section>
+    <div className="trust-strip"><span><b>01</b> Your tickets, your numbers</span><span><b>02</b> Drawn only when sold out</span><span><b>03</b> Results you can verify</span></div>
+    <DrawExplorer draws={(data ?? []) as Draw[]} unavailable={!!error} />
+    <section id="how-it-works" className="how-section scroll-mt-28">
+      <div><p className="eyebrow">NO COMPLICATED STEPS</p><h2 className="section-title">A small start.<br />Then, see what happens.</h2><Link href="/login" className="btn-primary mt-6">Get started ↗</Link></div>
+      <ol className="steps-list">{[["Make yourself at home", "Sign in and add your name and phone number so we can contact you if you win."], ["Top up. Pick your possibility.", "Add money with EasyPaisa or JazzCash. Once your payment is approved, choose a draw and buy your tickets."], ["Follow the result", "When all tickets sell, the admin runs the draw. Check the published proof and verify the result yourself."]].map(([title, text], i) => <li key={title}><span className="step-number">0{i + 1}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+    </section>
+    <section className="fairness-banner"><div><p className="eyebrow">LESS GUESSWORK. MORE TRANSPARENCY.</p><h2 className="section-title">Don’t just take our word for it.</h2><p>Each completed draw reveals its proof. Recalculate the result yourself using the ticket list, revealed seed and public randomness.</p></div><Link href="/winners" className="btn-ghost shrink-0">Explore past results ↗</Link></section>
+    <section id="help" className="faq-section scroll-mt-28"><div><p className="eyebrow">THE GOOD QUESTIONS</p><h2 className="section-title">Before you jump in.</h2><p className="mt-4 text-sm text-pine-900/65">Know how your entry works.</p></div><div>{[["How do I add money?", "Open your wallet, pay using the EasyPaisa or JazzCash details shown there, and submit the transaction ID. Your balance is credited after an admin verifies the payment."], ["When is a winner chosen?", "A draw must sell every ticket before the admin can choose a winner. The result uses a committed secret seed, the final ticket list and public randomness."], ["What happens if a draw doesn’t fill up?", "If a draw is cancelled by the admin, the ticket amounts are returned to your wallet. A deadline passing does not itself trigger an automatic refund."], ["Does buying a ticket guarantee a prize?", "No. A ticket is an entry into a draw, not a guaranteed prize. Participate only if you are 18 or older and spend only what you can afford."]].map(([q, a]) => <details key={q} className="faq-item"><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
+  </>;
 }
