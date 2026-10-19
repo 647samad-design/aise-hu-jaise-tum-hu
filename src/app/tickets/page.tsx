@@ -6,7 +6,7 @@ import ProgressBar from "@/components/ProgressBar";
 import { getSessionProfile } from "@/lib/auth";
 import { pkr, shortDate, type Draw } from "@/lib/format";
 
-export const metadata: Metadata = { title: "My tickets · 1Rupya" };
+export const metadata: Metadata = { title: "My tickets · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 type Row = {

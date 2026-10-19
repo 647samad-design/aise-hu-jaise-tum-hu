@@ -19,6 +19,8 @@ create table if not exists public.profiles (
   balance     integer not null default 0 check (balance >= 0),
   created_at  timestamptz not null default now()
 );
+-- When the player last opened their notifications (drives the unread badge).
+alter table public.profiles add column if not exists notifications_seen_at timestamptz not null default now();
 
 -- Auto-create a profile when someone signs up (Google, email link or email + password).
 -- The sign-up form sends full_name and phone as user metadata; the phone is kept only if it is a
@@ -29,9 +31,13 @@ declare v_phone text := regexp_replace(coalesce(new.raw_user_meta_data->>'phone'
         v_name  text := nullif(trim(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '')), '');
 begin
   if v_phone !~ '^(03[0-9]{9}|\+923[0-9]{9})$' then v_phone := null; end if;
-  insert into public.profiles (id, email, full_name, phone)
-  values (new.id, new.email, left(v_name, 80), v_phone)
+  -- seen_at slightly in the past so the welcome message below shows as unread.
+  insert into public.profiles (id, email, full_name, phone, notifications_seen_at)
+  values (new.id, new.email, left(v_name, 80), v_phone, now() - interval '1 second')
   on conflict (id) do nothing;
+  insert into public.notifications (user_id, kind, title, body, link)
+  values (new.id, 'welcome', 'Welcome to 1Rupya!',
+          'Add money to your wallet, pick a draw and buy your tickets. Every update about your draws will appear here.', '/wallet');
   return new;
 end $$;
 
@@ -99,6 +105,7 @@ create table if not exists public.draws (
   sold_tickets     integer not null default 0,
   status           text not null default 'open' check (status in ('open','full','drawn','cancelled')),
   ends_at          timestamptz,
+  opens_at         timestamptz,                      -- optional: ticket sales start at this time ("coming soon")
   -- Provably-fair commitment: the hash of a secret seed is PUBLISHED when the draw is created,
   -- BEFORE any ticket is sold. The seed itself is revealed after the draw.
   seed_hash        text not null,
@@ -111,6 +118,8 @@ create table if not exists public.draws (
   drawn_at         timestamptz,
   created_at       timestamptz not null default now()
 );
+
+alter table public.draws add column if not exists opens_at timestamptz;
 
 -- The secret seed lives here. RLS is on and there are NO policies, so only the
 -- SECURITY DEFINER functions can ever read it.
@@ -137,6 +146,26 @@ create or replace view public.draw_tickets_public as
          substr(encode(digest(t.user_id::text || ':' || t.draw_id::text, 'sha256'), 'hex'), 1, 10) as owner_tag
   from public.tickets t;
 
+-- ---------------------------------------------------------------- in-app notifications
+-- user_id NULL = broadcast to everyone (new draw, announcements). Rows are written only by the
+-- SECURITY DEFINER functions below; players can only read their own + broadcasts.
+create table if not exists public.notifications (
+  id          bigserial primary key,
+  user_id     uuid references public.profiles(id) on delete cascade,
+  kind        text not null check (kind in ('welcome','topup','ticket','soldout','result','win','refund','draw','announcement')),
+  title       text not null,
+  body        text,
+  link        text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists notifications_user_idx on public.notifications(user_id, created_at desc);
+
+create or replace function public.notify(p_user uuid, p_kind text, p_title text, p_body text, p_link text)
+returns void language sql security definer set search_path = public as $$
+  insert into public.notifications (user_id, kind, title, body, link) values (p_user, p_kind, p_title, p_body, p_link);
+$$;
+revoke all on function public.notify(uuid, text, text, text, text) from public, anon, authenticated;
+
 -- ---------------------------------------------------------------- Row Level Security
 alter table public.profiles     enable row level security;
 alter table public.wallet_txns  enable row level security;
@@ -144,6 +173,7 @@ alter table public.topups       enable row level security;
 alter table public.draws        enable row level security;
 alter table public.draw_secrets enable row level security;
 alter table public.tickets      enable row level security;
+alter table public.notifications enable row level security;
 
 drop policy if exists "profiles read own or admin" on public.profiles;
 create policy "profiles read own or admin" on public.profiles
@@ -164,9 +194,14 @@ drop policy if exists "tickets read own or admin" on public.tickets;
 create policy "tickets read own or admin" on public.tickets
   for select using (user_id = auth.uid() or public.is_admin());
 
+drop policy if exists "notifications read own or broadcast" on public.notifications;
+create policy "notifications read own or broadcast" on public.notifications
+  for select using (user_id = auth.uid() or user_id is null);
+
 -- Nobody can insert/update/delete directly from the browser: no write policies exist.
 revoke insert, update, delete on all tables in schema public from anon, authenticated;
 grant select on public.draw_tickets_public to anon, authenticated;
+grant select on public.notifications to authenticated;
 -- The secret seeds must never be readable from the browser, not even as an empty result.
 revoke all on public.draw_secrets from anon, authenticated;
 
@@ -199,6 +234,8 @@ begin
   insert into public.topups (user_id, amount, trx_id, method, sender_name)
   values (auth.uid(), p_amount, v_trx, p_method, nullif(trim(coalesce(p_sender_name, '')), ''))
   returning id into v_id;
+  perform public.notify(auth.uid(), 'topup', 'Payment received — PKR ' || p_amount || ' under review',
+    'TRX ' || v_trx || ' was submitted. Your wallet is credited as soon as we confirm the payment.', '/wallet');
   return v_id;
 exception when unique_violation then
   raise exception 'This transaction ID was already submitted';
@@ -222,23 +259,41 @@ begin
   if p_approve then
     update public.profiles set balance = balance + t.amount where id = t.user_id;
     insert into public.wallet_txns (user_id, amount, kind, ref) values (t.user_id, t.amount, 'topup', t.id::text);
+    perform public.notify(t.user_id, 'topup', 'PKR ' || t.amount || ' added to your wallet',
+      'Your payment (TRX ' || t.trx_id || ') was confirmed. You can buy tickets now.', '/#draws');
+  else
+    perform public.notify(t.user_id, 'topup', 'Top-up of PKR ' || t.amount || ' was not approved',
+      coalesce('Reason: ' || nullif(trim(p_note), ''), 'We could not match TRX ' || t.trx_id || ' to a payment. Contact support if you paid.'), '/wallet');
   end if;
 end $$;
 
 -- Admin creates a draw. The secret seed is generated here and only its hash is public.
+drop function if exists public.create_draw(text, text, text, integer, integer, integer, timestamptz);
 create or replace function public.create_draw(
   p_title text, p_description text, p_image_url text,
-  p_ticket_price integer, p_target integer, p_max_per_user integer, p_ends_at timestamptz)
+  p_ticket_price integer, p_target integer, p_max_per_user integer, p_ends_at timestamptz,
+  p_opens_at timestamptz default null)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare v_id uuid := gen_random_uuid(); v_seed text := encode(gen_random_bytes(32), 'hex'); v_max integer;
 begin
   if not public.is_admin() then raise exception 'Admins only'; end if;
   -- Default cap: one person can hold at most 20% of the tickets.
   v_max := coalesce(nullif(p_max_per_user, 0), greatest(1, (p_target * 20) / 100));
-  insert into public.draws (id, title, description, image_url, ticket_price, target_tickets, max_per_user, ends_at, seed_hash)
+  if p_opens_at is not null and p_ends_at is not null and p_ends_at <= p_opens_at then
+    raise exception 'The deadline must be after the opening time';
+  end if;
+  insert into public.draws (id, title, description, image_url, ticket_price, target_tickets, max_per_user, ends_at, opens_at, seed_hash)
   values (v_id, trim(p_title), nullif(trim(coalesce(p_description,'')), ''), nullif(trim(coalesce(p_image_url,'')), ''),
-          p_ticket_price, p_target, v_max, p_ends_at, encode(digest(v_seed, 'sha256'), 'hex'));
+          p_ticket_price, p_target, v_max, p_ends_at, p_opens_at, encode(digest(v_seed, 'sha256'), 'hex'));
   insert into public.draw_secrets (draw_id, seed) values (v_id, v_seed);
+  perform public.notify(null, 'draw',
+    case when p_opens_at is not null and p_opens_at > now()
+         then 'Coming soon: ' || trim(p_title)
+         else 'New draw open: ' || trim(p_title) end,
+    case when p_opens_at is not null and p_opens_at > now()
+         then 'Tickets open ' || to_char(p_opens_at at time zone 'Asia/Karachi', 'Dy DD Mon, HH12:MI AM') || ' (PKT). ' || p_ticket_price || ' PKR per ticket, ' || p_target || ' tickets.'
+         else 'PKR ' || p_ticket_price || ' per ticket, ' || p_target || ' tickets. Get yours before it sells out.' end,
+    '/draws/' || v_id);
   return v_id;
 end $$;
 
@@ -258,6 +313,9 @@ begin
   if not found then raise exception 'Draw not found'; end if;
   if d.status <> 'open' then raise exception 'This draw is no longer open'; end if;
   if d.ends_at is not null and d.ends_at < now() then raise exception 'This draw has expired'; end if;
+  if d.opens_at is not null and d.opens_at > now() then
+    raise exception 'Tickets for this draw open on % (PKT)', to_char(d.opens_at at time zone 'Asia/Karachi', 'DD Mon, HH12:MI AM');
+  end if;
   if p_qty > d.target_tickets - d.sold_tickets then
     raise exception 'Only % tickets left', d.target_tickets - d.sold_tickets;
   end if;
@@ -283,6 +341,18 @@ begin
          status = case when sold_tickets + p_qty >= target_tickets then 'full' else status end,
          full_at = case when sold_tickets + p_qty >= target_tickets then now() else full_at end
    where id = p_draw;
+
+  perform public.notify(auth.uid(), 'ticket', 'You''re in: ' || d.title,
+    case when p_qty = 1 then 'Ticket #' || v_first else 'Tickets #' || v_first || ' to #' || (d.sold_tickets + p_qty) end
+      || ' (PKR ' || v_cost || '). We''ll tell you here the moment the draw sells out and the winner is picked.',
+    '/draws/' || p_draw);
+
+  if d.sold_tickets + p_qty >= d.target_tickets then
+    insert into public.notifications (user_id, kind, title, body, link)
+    select distinct t.user_id, 'soldout', 'Sold out: ' || d.title,
+           'Every ticket is sold. The winner will be drawn soon — watch this space.', '/draws/' || p_draw
+      from public.tickets t where t.draw_id = p_draw;
+  end if;
 
   return jsonb_build_object('first', v_first, 'last', d.sold_tickets + p_qty, 'cost', v_cost);
 end $$;
@@ -328,6 +398,16 @@ begin
          seed_revealed = v_seed, proof = v_proof, drawn_at = now()
    where id = p_draw;
 
+  insert into public.notifications (user_id, kind, title, body, link)
+  select distinct t.user_id,
+         case when t.user_id = v_user then 'win' else 'result' end,
+         case when t.user_id = v_user then 'You won ' || d.title || '!' else 'Result: ' || d.title end,
+         case when t.user_id = v_user
+              then 'Your ticket #' || v_win || ' was drawn. We will call you on your registered number to arrange the prize.'
+              else 'Winning ticket #' || v_win || ' (' || v_label || '). Thanks for playing — you can verify the result yourself.' end,
+         '/verify/' || p_draw
+    from public.tickets t where t.draw_id = p_draw;
+
   return v_proof;
 end $$;
 
@@ -344,12 +424,30 @@ begin
   for r in select user_id, count(*)::integer as qty from public.tickets where draw_id = p_draw group by user_id loop
     update public.profiles set balance = balance + r.qty * d.ticket_price where id = r.user_id;
     insert into public.wallet_txns (user_id, amount, kind, ref) values (r.user_id, r.qty * d.ticket_price, 'refund', p_draw::text);
+    perform public.notify(r.user_id, 'refund', 'Refunded: ' || d.title,
+      'This draw was cancelled. PKR ' || (r.qty * d.ticket_price) || ' for your ' || r.qty || ' ticket(s) is back in your wallet.', '/wallet');
     v_users := v_users + 1;
   end loop;
 
   delete from public.tickets where draw_id = p_draw;
   update public.draws set status = 'cancelled', sold_tickets = 0 where id = p_draw;
   return v_users;
+end $$;
+
+-- Player opened the notifications page: clear the unread badge.
+create or replace function public.mark_notifications_seen()
+returns void language sql security definer set search_path = public as $$
+  update public.profiles set notifications_seen_at = now() where id = auth.uid();
+$$;
+
+-- Admin sends a message to every player (e.g. "Next lucky draw opens Friday 9 PM").
+create or replace function public.admin_announce(p_title text, p_body text, p_link text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'Admins only'; end if;
+  if length(trim(coalesce(p_title, ''))) < 3 then raise exception 'Write a title'; end if;
+  if p_link is not null and p_link <> '' and p_link !~ '^/' then raise exception 'Link must start with / (a page on this site)'; end if;
+  perform public.notify(null, 'announcement', left(trim(p_title), 120), nullif(left(trim(coalesce(p_body, '')), 600), ''), nullif(trim(coalesce(p_link, '')), ''));
 end $$;
 
 -- Admin dashboard numbers in one call.
@@ -371,7 +469,9 @@ grant execute on function
   public.update_profile(text, text),
   public.submit_topup(integer, text, text, text),
   public.review_topup(bigint, boolean, text),
-  public.create_draw(text, text, text, integer, integer, integer, timestamptz),
+  public.create_draw(text, text, text, integer, integer, integer, timestamptz, timestamptz),
+  public.mark_notifications_seen(),
+  public.admin_announce(text, text, text),
   public.buy_tickets(uuid, integer),
   public.draw_winner(uuid, text),
   public.cancel_draw(uuid),

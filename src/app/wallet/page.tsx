@@ -6,7 +6,7 @@ import TopupForm from "@/components/TopupForm";
 import { getSessionProfile } from "@/lib/auth";
 import { pkr, shortDate } from "@/lib/format";
 
-export const metadata: Metadata = { title: "Wallet · 1Rupya" };
+export const metadata: Metadata = { title: "Wallet · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 const KIND: Record<string, string> = { topup: "Top-up", ticket: "Tickets bought", refund: "Refund", adjust: "Adjustment" };

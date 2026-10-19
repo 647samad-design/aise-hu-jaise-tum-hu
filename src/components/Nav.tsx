@@ -14,6 +14,16 @@ export default async function Nav() {
   const profile = session?.profile;
   const name = profile?.full_name || user?.email || "";
 
+  // Unread = own or broadcast notifications newer than the last time the player opened the list.
+  let unread = 0;
+  if (session && user) {
+    const { count } = await session.supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .gt("created_at", profile?.notifications_seen_at ?? "1970-01-01");
+    unread = count ?? 0;
+  }
+
   return (
     <>
       <header className="site-header">
@@ -28,11 +38,15 @@ export default async function Nav() {
           <nav aria-label="Account" className="nav-account">
             {user ? (
               <>
+                <Link href="/notifications" className="bell" aria-label={unread ? `Notifications, ${unread} new` : "Notifications"}>
+                  <Icon name="bell" size={20} />
+                  {unread > 0 && <span className="bell-count">{unread > 9 ? "9+" : unread}</span>}
+                </Link>
                 <Link href="/wallet" className="wallet-chip" title="Wallet balance">
                   <Icon name="wallet" size={16} />
                   {pkr(profile?.balance ?? 0)}
                 </Link>
-                <UserMenu name={name} email={user.email ?? ""} isAdmin={!!profile?.is_admin} needsPhone={!profile?.phone} />
+                <UserMenu name={name} email={user.email ?? ""} isAdmin={!!profile?.is_admin} needsPhone={!profile?.phone} unread={unread} />
               </>
             ) : (
               <>

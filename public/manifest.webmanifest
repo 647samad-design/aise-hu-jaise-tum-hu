@@ -1,16 +1,33 @@
 {
-  "name": "1Rupya",
+  "id": "/",
+  "name": "1Rupya — Lucky draws from PKR 1",
   "short_name": "1Rupya",
-  "description": "Win gadgets for just PKR 1-2 per ticket. Fair, transparent lucky draws.",
-  "start_url": "/",
+  "description": "Win phones and gadgets with tickets from PKR 1. Pay by EasyPaisa or JazzCash. Every winner can be verified.",
+  "lang": "en-PK",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#fbf8ef",
-  "theme_color": "#0b3724",
+  "background_color": "#f8f8f3",
+  "theme_color": "#103f34",
+  "categories": ["entertainment", "lifestyle", "shopping"],
+  "prefer_related_applications": false,
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open draws", "short_name": "Draws", "url": "/#draws", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "My tickets", "short_name": "Tickets", "url": "/tickets", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Wallet", "short_name": "Wallet", "url": "/wallet", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Notifications", "short_name": "Updates", "url": "/notifications", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/phone-home.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Open lucky draws" },
+    { "src": "/screenshots/phone-tickets.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Your tickets and results" },
+    { "src": "/screenshots/desktop-home.png", "sizes": "1366x768", "type": "image/png", "form_factor": "wide", "label": "1Rupya on desktop" }
   ]
 }

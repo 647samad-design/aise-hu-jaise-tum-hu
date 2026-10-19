@@ -1,16 +1,15 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isStandalone, onInstallChange, getInstallEvent, promptInstall, setInstallEvent, type InstallEvent } from "@/lib/install";
 
-type InstallEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-// Registers the service worker and shows an "Add 1Rupya to Home Screen" banner.
+// Registers the service worker and shows an "Install 1Rupya" banner on phones.
 export default function RegisterSW() {
-  const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
-  const [hidden, setHidden] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const [hidden, setHidden] = useState(true);
+  const path = usePathname();
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -20,39 +19,43 @@ export default function RegisterSW() {
       e.preventDefault();
       setInstallEvent(e as InstallEvent);
     };
+    const onInstalled = () => setInstallEvent(null);
     window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    const off = onInstallChange(() => setCanInstall(!!getInstallEvent()));
     try {
-      if (localStorage.getItem("hide-install") === "1") setHidden(true);
+      // Ask again a week after "not now".
+      const t = Number(localStorage.getItem("hide-install-at") || 0);
+      setHidden(isStandalone() || Date.now() - t < 7 * 86_400_000);
     } catch {
-      /* storage unavailable */
+      setHidden(isStandalone());
     }
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+      off();
+    };
   }, []);
 
-  if (!installEvent || hidden) return null;
+  if (!canInstall || hidden || path === "/download") return null;
 
   return (
     <div className="install-banner fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-pine-900 p-3 text-white shadow-card">
+      <img src="/icons/icon-192.png" alt="" width={44} height={44} className="rounded-xl" />
       <div className="flex-1 text-sm">
-        <p className="font-semibold">Add 1Rupya to Home Screen</p>
-        <p className="text-pine-100/80">Open it like an app, one tap.</p>
+        <p className="font-semibold">Get the 1Rupya app</p>
+        <p className="text-white/70">Free · 1 tap · no Play Store needed. <Link href="/download" className="underline">How?</Link></p>
       </div>
-      <button
-        className="btn-gold !px-4 !py-2"
-        onClick={async () => {
-          await installEvent.prompt();
-          setInstallEvent(null);
-        }}
-      >
+      <button className="btn-gold !px-4 !py-2" onClick={() => void promptInstall()}>
         Install
       </button>
       <button
-        aria-label="Dismiss"
+        aria-label="Not now"
         className="px-2 text-xl leading-none text-white/70"
         onClick={() => {
           setHidden(true);
           try {
-            localStorage.setItem("hide-install", "1");
+            localStorage.setItem("hide-install-at", String(Date.now()));
           } catch {
             /* ignore */
           }

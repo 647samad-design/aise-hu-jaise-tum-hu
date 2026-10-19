@@ -34,8 +34,14 @@ export default function AdminDrawForm() {
         <p className="mt-1 text-xs text-pine-900/60">0 = automatic (20% of total).</p>
       </div>
       <div>
+        <label className="label" htmlFor="opens_at">Tickets open at (optional)</label>
+        <input id="opens_at" name="opens_at" type="datetime-local" className="input" />
+        <p className="mt-1 text-xs text-pine-900/60">Pakistan time. Leave empty to open now. Players see a countdown and get notified.</p>
+      </div>
+      <div>
         <label className="label" htmlFor="ends_at">Deadline (optional)</label>
         <input id="ends_at" name="ends_at" type="datetime-local" className="input" />
+        <p className="mt-1 text-xs text-pine-900/60">Pakistan time. If not sold out by then, cancel &amp; refund.</p>
       </div>
       <div className="sm:col-span-2">
         <button disabled={pending} className="btn-primary w-full">{pending ? "Creating..." : "Create draw"}</button>

@@ -6,11 +6,16 @@ import Icon from "@/components/Icon";
 import { timeLeft } from "@/lib/format";
 
 /** Ticks every 30s so "2h 14m left" stays accurate without reloading. */
-export function Countdown({ endsAt, className = "" }: { endsAt: string; className?: string }) {
-  const [text, setText] = useState(() => timeLeft(endsAt));
+export function Countdown({ endsAt, className = "", prefix }: { endsAt: string; className?: string; prefix?: string }) {
+  const fmt = () => {
+    const t = timeLeft(endsAt);
+    return prefix && t ? `${prefix} ${t.replace(/ left$/, "")}` : t;
+  };
+  const [text, setText] = useState(fmt);
   useEffect(() => {
-    const id = setInterval(() => setText(timeLeft(endsAt)), 30_000);
+    const id = setInterval(() => setText(fmt()), 30_000);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endsAt]);
   const urgent = new Date(endsAt).getTime() - Date.now() < 86_400_000;
   return (

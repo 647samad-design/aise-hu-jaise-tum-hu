@@ -15,17 +15,30 @@ export default function TopupForm() {
   const name = process.env.NEXT_PUBLIC_PAY_ACCOUNT_NAME;
   const ep = process.env.NEXT_PUBLIC_PAY_EASYPAISA;
   const jc = process.env.NEXT_PUBLIC_PAY_JAZZCASH;
+  const qr = process.env.NEXT_PUBLIC_PAY_QR_URL;
 
   return (
     <div className="panel space-y-5" id="add-money">
       <div>
         <h2 className="panel-title">Add money</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-pine-900/80">
-          <li>Send the amount to the account below.</li>
+          <li>Send the amount — scan the QR code or use the number below.</li>
           <li>Copy the transaction ID (TRX ID) from the confirmation SMS.</li>
           <li>Submit it here. We credit your wallet after checking the payment.</li>
         </ol>
       </div>
+
+      {qr && (
+        <div className="qr-box">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qr} alt={`Payment QR code for ${name ?? "1Rupya"}`} width={220} height={220} />
+          <div className="qr-text">
+            <p className="qr-title">Scan to pay</p>
+            <p>Open EasyPaisa, JazzCash or your bank app and scan this code. On this phone? Save it, then choose <b>Scan from gallery</b> in your payment app.</p>
+            <a href={qr} download="1rupya-payment-qr.png" className="btn-ghost !py-2">Save QR to phone</a>
+          </div>
+        </div>
+      )}
 
       <div className="pay-box">
         <p className="pay-name">Account name: <b>{name || "(not set yet)"}</b></p>

@@ -10,7 +10,7 @@ import { getSessionProfile } from "@/lib/auth";
 import { pkr, shortDate } from "@/lib/format";
 import { safeNext } from "@/lib/validation";
 
-export const metadata: Metadata = { title: "Account · 1Rupya" };
+export const metadata: Metadata = { title: "Account · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {

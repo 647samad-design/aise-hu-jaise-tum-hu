@@ -1,14 +1,31 @@
 import Link from "next/link";
 import DrawCard from "@/components/DrawCard";
 import Icon from "@/components/Icon";
+import type { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
 import { getPublicDraws } from "@/lib/public-draws";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+
+const FAQ: [string, string][] = [
+        ["Is a prize guaranteed?", "No. Each ticket gives you a chance in that draw. Only the selected winning ticket wins the prize."],
+        ["When does the draw happen?", "Every ticket must sell first. The admin then initiates the draw; reaching the ticket target does not immediately select a winner."],
+        ["What happens if a draw is cancelled?", "When the admin cancels a draw, its ticket payments are refunded to the participants’ 1Rupya wallets."],
+        ["How can I verify a winner?", "Open Past results and choose Verify result on a completed draw to inspect the published proof and recalculate the winning ticket."],
+      ];
 
 export default async function Home() {
   const { draws, unavailable } = await getPublicDraws();
   return (
     <div className="home">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+        }}
+      />
       <section className="premium-hero">
         <div className="hero-copy">
           <p className="eyebrow"><span className="status-dot" /> SMALL TICKETS. BIG POSSIBILITIES.</p>
@@ -46,12 +63,7 @@ export default async function Home() {
       ].map(([number, icon, title, description]) => <div className="step" key={number}><span className="step-number">{number}</span><div><h3>{title}</h3><p>{description}</p></div><Icon name={icon as "wallet" | "ticket" | "shield"} /></div>)}</div></section>
 
       <section id="fairness" className="fairness-panel"><div><p className="eyebrow">TRUST STARTS WITH TRANSPARENCY</p><h2>Don’t just take our word.<br /><em>Check the proof.</em></h2><p>Each completed draw publishes its result and verification details. Follow the ticket progress and inspect the formula behind the winning number.</p><Link href="/winners" className="btn-gold">Explore published results <Icon name="arrow" /></Link></div><div className="fairness-details"><Icon name="shield" /><h3>Know before you enter</h3><p><Icon name="check" /> A draw runs only after every ticket sells.</p><p><Icon name="check" /> The admin initiates the draw manually.</p><p><Icon name="check" /> Cancelled draws return ticket funds to wallets.</p><p><Icon name="check" /> Completed results can be checked publicly.</p></div></section>
-      <section className="faq-section"><div><p className="eyebrow">THE DETAILS MATTER</p><h2>A little more clarity.</h2></div><div>{[
-        ["Is a prize guaranteed?", "No. Each ticket gives you a chance in that draw. Only the selected winning ticket wins the prize."],
-        ["When does the draw happen?", "Every ticket must sell first. The admin then initiates the draw; reaching the ticket target does not immediately select a winner."],
-        ["What happens if a draw is cancelled?", "When the admin cancels a draw, its ticket payments are refunded to the participants’ 1Rupya wallets."],
-        ["How can I verify a winner?", "Open Past results and choose Verify result on a completed draw to inspect the published proof and recalculate the winning ticket."],
-      ].map(([q,a]) => <details key={q}><summary>{q}<span>+</span></summary><p>{a}</p></details>)}</div></section>
+      <section className="faq-section"><div><p className="eyebrow">THE DETAILS MATTER</p><h2>A little more clarity.</h2></div><div>{FAQ.map(([q,a]) => <details key={q}><summary>{q}<span>+</span></summary><p>{a}</p></details>)}</div></section>
     </div>
   );
 }
