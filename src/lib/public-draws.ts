@@ -16,3 +16,16 @@ export async function getPublicDraws(completed = false): Promise<{ draws: Draw[]
     return { draws: [], unavailable: true };
   }
 }
+
+export type PublicStats = { players: number; entries: number; completed: number; delivered: number; refunded: number };
+
+export async function getPublicStats(): Promise<PublicStats | null> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
+  try {
+    const client = await createClient();
+    const { data, error } = await client.rpc("public_stats");
+    return error ? null : (data as PublicStats);
+  } catch {
+    return null;
+  }
+}

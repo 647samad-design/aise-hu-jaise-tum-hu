@@ -19,6 +19,10 @@ export default function AdminAnnounceForm() {
         <label className="label" htmlFor="ann_link">Link (optional)</label>
         <input id="ann_link" name="link" className="input" placeholder="/#draws" />
       </div>
+      <label className="check-row sm:col-span-2">
+        <input type="checkbox" name="email" />
+        <span>Also send as <b>email</b> to every player (needs email set up). Use for big news like a new draw opening.</span>
+      </label>
       <div className="flex items-end">
         <button disabled={pending} className="btn-gold w-full">{pending ? "Sending…" : "Send to all players"}</button>
       </div>

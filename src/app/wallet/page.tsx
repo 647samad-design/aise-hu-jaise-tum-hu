@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Icon from "@/components/Icon";
 import { redirect } from "next/navigation";
-import TopupForm from "@/components/TopupForm";
+import PaymentForm from "@/components/PaymentForm";
+import { getPaySettings } from "@/lib/settings";
 import { getSessionProfile } from "@/lib/auth";
 import { pkr, shortDate } from "@/lib/format";
 
@@ -22,9 +23,10 @@ export default async function WalletPage() {
   if (!user) redirect("/login?next=/wallet");
 
   const [{ data: topups }, { data: txns }] = await Promise.all([
-    supabase.from("topups").select("id, amount, trx_id, status, admin_note, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+    supabase.from("topups").select("id, amount, trx_id, status, admin_note, created_at, qty, result, draws(id, title)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
     supabase.from("wallet_txns").select("id, amount, kind, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15),
   ]);
+  const settings = await getPaySettings();
 
   return (
     <div className="page">
@@ -47,12 +49,12 @@ export default async function WalletPage() {
         )}
       </section>
 
-      <TopupForm />
+      <PaymentForm userId={user.id} settings={settings} />
       </div>
       <div className="space-y-6">
 
       <section className="panel">
-        <h2 className="panel-title mb-3">Top-up requests</h2>
+        <h2 className="panel-title mb-3">Payment requests</h2>
         {(topups ?? []).length === 0 ? (
           <p className="text-sm text-pine-900/60">No top-ups yet. After you pay, submit the transaction ID and it will appear here.</p>
         ) : (
@@ -60,9 +62,18 @@ export default async function WalletPage() {
             {topups!.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div>
-                  <p className="font-semibold">{pkr(t.amount)}</p>
+                  <p className="font-semibold">
+                    {pkr(t.amount)}
+                    {(t as unknown as { draws: { id: string; title: string } | null }).draws && (
+                      <span className="font-normal text-pine-900/70"> · {t.qty} ticket(s) in{" "}
+                        <Link className="auth-link" href={`/draws/${(t as unknown as { draws: { id: string } }).draws.id}`}>{(t as unknown as { draws: { title: string } }).draws.title}</Link>
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-pine-900/60">TRX {t.trx_id} · {shortDate(t.created_at)}</p>
-                  {t.admin_note && <p className="text-xs text-pine-900/60">{t.admin_note}</p>}
+                  {t.admin_note && <p className="text-xs text-pine-900/60">Note: {t.admin_note}</p>}
+                  {t.status === "approved" && t.result?.startsWith("entered") && <p className="text-xs font-semibold text-pine-700">Entered in the draw ✓</p>}
+                  {t.status === "pending" && <p className="text-xs text-pine-900/60">Being verified by our team</p>}
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLE[t.status]}`}>{t.status}</span>
               </li>

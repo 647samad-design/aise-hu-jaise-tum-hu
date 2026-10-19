@@ -3,7 +3,7 @@ import DrawCard from "@/components/DrawCard";
 import Icon from "@/components/Icon";
 import type { Metadata } from "next";
 import JsonLd from "@/components/JsonLd";
-import { getPublicDraws } from "@/lib/public-draws";
+import { getPublicDraws, getPublicStats } from "@/lib/public-draws";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -16,7 +16,7 @@ const FAQ: [string, string][] = [
       ];
 
 export default async function Home() {
-  const { draws, unavailable } = await getPublicDraws();
+  const [{ draws, unavailable }, stats] = await Promise.all([getPublicDraws(), getPublicStats()]);
   return (
     <div className="home">
       <JsonLd
@@ -49,6 +49,15 @@ export default async function Home() {
       </section>
 
       <div className="confidence-strip"><p>Small entry.<br /><strong>Clear expectations.</strong></p><span><Icon name="ticket" /> Tickets from PKR 1</span><span><Icon name="shield" /> Verifiable results</span><span><Icon name="wallet" /> EasyPaisa & JazzCash</span></div>
+
+      {stats && stats.entries > 0 && (
+        <section className="trust-stats" aria-label="1Rupya in numbers">
+          <div><strong>{stats.players.toLocaleString()}</strong><span>players joined</span></div>
+          <div><strong>{stats.entries.toLocaleString()}</strong><span>tickets entered</span></div>
+          <div><strong>{stats.completed.toLocaleString()}</strong><span>draws completed</span></div>
+          <div><strong>{stats.delivered.toLocaleString()}</strong><span>prizes delivered</span></div>
+        </section>
+      )}
 
       <section id="draws" className="draw-section">
         <div className="section-heading"><div><p className="eyebrow">FIND YOUR NEXT POSSIBILITY</p><h2>Discover the draws<span>.</span></h2></div><Link href="/winners" className="text-link">View past results <Icon name="arrow" /></Link></div>

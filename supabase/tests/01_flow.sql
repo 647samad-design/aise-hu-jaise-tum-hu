@@ -18,15 +18,15 @@ do $$ declare i int; begin
   for i in 1..20 loop
     perform pg_temp.as_user(i);
     perform public.update_profile('Player Number ' || i, '0300' || lpad(i::text, 7, '0'));
-    perform public.submit_topup(100, 'TRX' || lpad(i::text, 9, '0'), 'easypaisa', 'Player');
+    perform public.submit_topup(100, 'TRX' || lpad(i::text, 9, '0'), 'easypaisa', 'Player', auth.uid()::text || '/p.jpg', 'sha' || i);
   end loop;
 end $$;
 select count(*) as pending_topups from public.topups where status = 'pending';
 
 \echo '--- duplicate TRX must fail'
 select pg_temp.as_user(1);
-select public.submit_topup(100, 'trx000000002 ', 'easypaisa', 'x');
-select public.submit_topup(100, 'TRX000000001', 'easypaisa', 'x');
+select public.submit_topup(100, 'trx000000002 ', 'easypaisa', 'Player One', auth.uid()::text || '/q.jpg', 'shaX1');
+select public.submit_topup(100, 'TRX000000001', 'easypaisa', 'Player One', auth.uid()::text || '/r.jpg', 'shaX2');
 
 \echo '--- non-admin cannot approve'
 select public.review_topup(1, true, null);

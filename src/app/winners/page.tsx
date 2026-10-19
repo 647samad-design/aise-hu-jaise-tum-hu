@@ -30,13 +30,14 @@ export default async function WinnersPage() {
           {draws.map((d) => (
             <div key={d.id} className="card overflow-hidden">
               <div className="aspect-[16/9] bg-gradient-to-br from-pine-100 to-pine-200">
-                {d.image_url && (
+                {(d.delivery_image || d.image_url) && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.image_url} alt={d.title} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={(d.delivery_image || d.image_url)!} alt={d.delivery_image ? `${d.title} handed over to the winner` : d.title} className="h-full w-full object-cover" loading="lazy" />
                 )}
               </div>
               <div className="space-y-3 p-5">
                 <p className="font-display text-xl text-pine-900">{d.title}</p>
+                {d.delivered_at && <p className="pill pill-green">✓ Prize delivered</p>}
                 <div className="winner-line">
                   <Icon name="trophy" size={18} />
                   <span><b>{d.winner_label}</b> won with ticket <b>#{d.winner_ticket}</b></span>
