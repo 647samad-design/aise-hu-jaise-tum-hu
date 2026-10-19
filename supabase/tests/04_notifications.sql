@@ -14,8 +14,8 @@ $$;
 select count(*) from public.notifications where kind = 'welcome';
 
 \echo '--- top-up submitted + approved'
-select pg_temp.as_user(1); select public.submit_topup(100, 'TRXN00000001', 'easypaisa', 'x');
-select pg_temp.as_user(2); select public.submit_topup(100, 'TRXN00000002', 'jazzcash', 'x');
+select pg_temp.as_user(1); select public.submit_topup(100, 'TRXN00000001', 'easypaisa', 'Player One', auth.uid()::text || '/a.jpg', 'n1');
+select pg_temp.as_user(2); select public.submit_topup(100, 'TRXN00000002', 'jazzcash', 'Player Two', auth.uid()::text || '/b.jpg', 'n2');
 select pg_temp.as_user(0);
 select public.review_topup(id, true, null) from public.topups order by id;
 select user_id, title from public.notifications where kind = 'topup' order by id;

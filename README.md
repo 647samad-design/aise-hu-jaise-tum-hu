@@ -17,7 +17,10 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
 | Admin | Dashboard numbers, approve/reject top-ups, create draws, draw winner, cancel + refund, user list |
 | Notifications | Bell + `/notifications`: payment received / approved / rejected, "you're in" after buying, sold out, result, **you won**, refunds, new and coming-soon draws, admin announcements to everyone |
 | Coming-soon draws | Admin sets *Tickets open at*; players see a countdown and are notified; buying is blocked until then |
-| Payment QR | Your EasyPaisa/JazzCash/bank QR ("scanner") on the Wallet page with a *Save QR* button for same-phone payments |
+| Pay & join | Player uploads payment screenshot + sender account name + TID; admin verifies with the screenshot side by side; approval enters them in the draw and emails them |
+| Admin | Tabs for Payments, Draws, New draw, Announce, Payment settings (upload QR), Players (search); product photo upload, facts, market value, email participants, prize-delivery proof |
+| Trust | Participant count + live "who has joined" list on every draw, homepage numbers (players, tickets, draws completed, prizes delivered), delivery photos on Winners |
+| Payment QR | Uploaded from /admin, shown on Wallet and Pay & join with a *Save QR* button for same-phone payments |
 | SEO | Sitemap with every draw, robots.txt, canonical URLs, Google structured data (Organization, WebSite, FAQ, breadcrumbs), share images for WhatsApp/Facebook (site + each draw), private pages set to noindex, Search Console verification |
 | Android / iPhone app | Installable app (PWA) with shortcuts and store-style screenshots, install banner, `/download` page with Android & iPhone steps and a QR for desktop visitors, optional APK via PWABuilder |
 | PWA | Web manifest, service worker (fast repeat loads, offline page, never caches money data) |
@@ -53,13 +56,37 @@ PKR 1-2 tickets, and a winner is drawn **only when every ticket is sold**, with 
    pages and authentication routes are served correctly. Add your own domain later; only the Supabase redirect
    URLs need updating.
 
-## Payment QR ("scanner")
+## How a player joins a draw (pay & join)
 
-1. Save your EasyPaisa / JazzCash / Raast QR image as `public/payment-qr.png` (PNG or JPG, square, at least 400 px).
-2. Set `NEXT_PUBLIC_PAY_QR_URL=/payment-qr.png` in your env vars and redeploy.
+1. Player opens a draw, picks how many tickets, taps **Pay & join**.
+2. They send the money (QR or EasyPaisa/JazzCash number), **upload the screenshot**, write the **name on the account
+   they paid from** and the **Transaction ID**.
+3. The request appears in **/admin → Payments** with the screenshot, amount check and a warning if the sender name
+   doesn't match the profile. You compare it with your EasyPaisa/JazzCash history.
+4. **Approve** → the player is entered in the draw automatically, gets ticket numbers, a notification and an **email**
+   ("You're in!"). If the draw sold out meanwhile, the money goes to their wallet instead and they are told.
+   **Reject** → pick a reason; the player is notified and emailed.
+5. Each draw shows how many people joined and a live "Who has joined" list (names partly hidden).
+6. After the draw: **/admin → Draws → "Email result to all participants"** sends everyone the winner and the verify link
+   in one click. Then **Mark prize delivered** with a handover photo — it shows on Winners and builds trust.
 
-The QR only makes paying easier. Players still submit the TRX ID, and you approve it in `/admin` after matching it
-with your payment history; the player then gets a notification and the money appears in their wallet.
+Players can still keep money in their wallet and buy instantly from it.
+
+Screenshots are stored privately (only the player and admins can see them). The same screenshot or the same
+Transaction ID can never be used twice.
+
+## Payment QR and payment details
+
+Go to **/admin → Payment settings**: upload your QR, enter account name, EasyPaisa / JazzCash numbers, bank/IBAN,
+support WhatsApp and the minimum top-up. They show on Wallet and Pay & join immediately — no redeploy.
+
+## Emails
+
+1. Create a free account at [resend.com](https://resend.com) (3,000 emails/month free) and verify your domain.
+2. Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `1Rupya <draws@yourdomain.pk>`) to your Netlify/Vercel env vars, redeploy.
+3. Check **/admin → Payment settings → Email status**.
+
+Without email set up everything still works; players get in-app notifications only.
 
 ## SEO checklist after going live
 
@@ -124,6 +151,7 @@ psql -d t -f supabase/tests/01_flow.sql && psql -d t -f supabase/tests/02_cancel
 psql -d t -f supabase/tests/03_signup_profile.sql
 # notifications test expects a fresh database:
 createdb t2 && psql -d t2 -f supabase/tests/00_stub_supabase.sql && psql -d t2 -f supabase/schema.sql && psql -d t2 -f supabase/tests/04_notifications.sql
+createdb t3 && psql -d t3 -f supabase/tests/00_stub_supabase.sql && psql -d t3 -f supabase/schema.sql && psql -d t3 -f supabase/tests/05_pay_to_join.sql
 ```
 
 ## Before you take real money

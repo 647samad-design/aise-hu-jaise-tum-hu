@@ -31,6 +31,7 @@ export default function DrawCard({ draw }: { draw: Draw }) {
         )}
       </div>
       <div className="space-y-3 p-4">
+        {draw.prize_value ? <p className="text-xs font-semibold uppercase tracking-wider text-gold-600">Worth {pkr(draw.prize_value)}</p> : null}
         <h3 className="font-display text-xl leading-snug text-pine-900 group-hover:text-pine-700">{draw.title}</h3>
         {upcoming && draw.opens_at ? (
           <p className="opens-line">
@@ -41,7 +42,7 @@ export default function DrawCard({ draw }: { draw: Draw }) {
           <>
             <ProgressBar sold={draw.sold_tickets} target={draw.target_tickets} />
             <p className="flex items-center justify-between text-sm text-pine-900/70">
-              <span>{left > 0 ? `${left.toLocaleString()} left` : "All tickets sold"}</span>
+              <span>{left > 0 ? `${left.toLocaleString()} left` : "All tickets sold"} · {(draw.participants ?? 0).toLocaleString()} joined</span>
               {draw.ends_at && draw.status === "open" && <Countdown endsAt={draw.ends_at} />}
             </p>
           </>

@@ -100,7 +100,12 @@ export default function BuyTickets({ drawId, price, left, maxQty, signedIn, hasP
       </p>
 
       {short ? (
-        <Link href="/wallet" className="btn-gold w-full">Add money — you need {pkr(cost - balance)} more</Link>
+        <>
+          <Link href={`/draws/${drawId}/join?qty=${qty}`} className="btn-gold w-full">
+            Pay {pkr(cost)} &amp; join
+          </Link>
+          <p className="text-center text-xs text-pine-900/60">EasyPaisa · JazzCash · Bank — upload your screenshot, we verify and enter you.</p>
+        </>
       ) : confirming ? (
         <div className="confirm-box">
           <p>
@@ -127,8 +132,14 @@ export default function BuyTickets({ drawId, price, left, maxQty, signedIn, hasP
         </div>
       ) : (
         <button type="button" className="btn-gold w-full" onClick={() => { setResult(null); setConfirming(true); }}>
-          Buy {qty} ticket{qty > 1 ? "s" : ""}
+          Buy {qty} ticket{qty > 1 ? "s" : ""} from wallet
         </button>
+      )}
+
+      {!short && !confirming && (
+        <Link href={`/draws/${drawId}/join?qty=${qty}`} className="block text-center text-sm font-semibold text-pine-700 underline underline-offset-4">
+          Or pay {pkr(cost)} directly with EasyPaisa / JazzCash
+        </Link>
       )}
 
       {result && (

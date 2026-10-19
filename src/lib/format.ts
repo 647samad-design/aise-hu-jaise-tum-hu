@@ -33,6 +33,13 @@ export type Draw = {
   status: "open" | "full" | "drawn" | "cancelled";
   ends_at: string | null;
   opens_at?: string | null;
+  gallery?: string[];
+  facts?: string[];
+  prize_value?: number | null;
+  participants?: number;
+  delivery_image?: string | null;
+  delivery_note?: string | null;
+  delivered_at?: string | null;
   seed_hash: string;
   seed_revealed: string | null;
   winner_ticket: number | null;
