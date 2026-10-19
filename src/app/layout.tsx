@@ -23,11 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-        <footer className="mx-auto max-w-5xl px-4 pb-24 pt-6 text-center text-xs text-pine-900/60">
-          <p>
-            1Rupya · 18+ only · Winners are picked by a public, verifiable formula, never by hand.
-          </p>
+        <main className="site-main">{children}</main>
+        <footer className="site-footer">
+          <div><a href="/" className="footer-brand">1Rupya<span>Small tickets. Big possibilities.</span></a><p>Made for possibility. Built on transparency.</p></div>
+          <div className="footer-links"><a href="/#draws">Explore draws</a><a href="/winners">Past results</a><a href="/#fairness">Fairness & rules</a></div>
+          <p className="footer-disclaimer">18+ only · Participation does not guarantee a prize.<br />Review each draw’s rules before purchasing tickets.</p>
         </footer>
         <RegisterSW />
       </body>

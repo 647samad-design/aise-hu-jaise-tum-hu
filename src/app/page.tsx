@@ -1,63 +1,57 @@
 import Link from "next/link";
 import DrawCard from "@/components/DrawCard";
-import { createClient } from "@/lib/supabase/server";
-import type { Draw } from "@/lib/format";
+import Icon from "@/components/Icon";
+import { getPublicDraws } from "@/lib/public-draws";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("draws")
-    .select("*")
-    .in("status", ["open", "full"])
-    .order("created_at", { ascending: false });
-  const draws = (data ?? []) as Draw[];
-
+  const { draws, unavailable } = await getPublicDraws();
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-pine-800 to-ink p-6 text-white shadow-card sm:p-10">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-gold-300">Tiny ticket · real prize</p>
-        <h1 className="font-display text-3xl font-bold leading-tight sm:text-5xl">
-          Win a gadget for <span className="text-gold-400">PKR 1</span>.
-        </h1>
-        <p className="mt-3 max-w-xl text-pine-100/90">
-          Every draw only runs when <b>every ticket is sold</b>. The winner is picked by a public formula
-          that anyone can re-check. No hand-picked winners, ever.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a href="#draws" className="btn-gold">See live draws</a>
-          <Link href="/winners" className="btn bg-white/10 text-white hover:bg-white/20">Past winners</Link>
+    <div className="home">
+      <section className="premium-hero">
+        <div className="hero-copy">
+          <p className="eyebrow"><span className="status-dot" /> SMALL TICKETS. BIG POSSIBILITIES.</p>
+          <h1>A little rupya.<br />A world of <em>possibility.</em></h1>
+          <p className="hero-description">Your next favourite gadget could start with just PKR 1. Explore the draws, know the rules, and verify the result for yourself.</p>
+          <div className="hero-actions"><a href="#draws" className="btn-gold">Explore draws <Icon name="arrow" /></a><a href="#how-it-works" className="hero-secondary">How it works <span>↗</span></a></div>
+          <div className="hero-note"><Icon name="shield" /><span>Public draw proof. Transparent ticket progress.</span></div>
+        </div>
+        <div className="hero-art" aria-label="Illustration of a one rupya entry ticket">
+          <div className="orbit orbit-one" /><div className="orbit orbit-two" />
+          <span className="art-caption">ONE SMALL START</span>
+          <div className="entry-ticket">
+            <div className="ticket-top"><span>1RUPYA</span><Icon name="ticket" /></div>
+            <div className="ticket-amount"><small>FROM PKR</small><strong>1<span>.00</span></strong></div>
+            <div className="ticket-bottom"><span>A little chance.<br />A bigger possibility.</span><span className="ticket-star">✳</span></div>
+            <div className="ticket-stub"><span>YOUR POSSIBILITY STARTS HERE</span><div className="barcode" /></div>
+          </div>
+          <div className="proof-float"><span className="proof-icon"><Icon name="shield" /></span><div><strong>Fairness you can check</strong><span>Public, verifiable draw results</span></div></div>
+          <span className="art-footnote">Ticket illustration · Prizes vary by draw</span>
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        {[
-          ["1. Top up", "Add PKR 50+ to your wallet via EasyPaisa or JazzCash."],
-          ["2. Buy tickets", "Spend PKR 1-2 per ticket. Your numbers appear instantly."],
-          ["3. Fair draw", "When the last ticket sells, the winner is drawn and proven publicly."],
-        ].map(([t, d]) => (
-          <div key={t} className="card p-4">
-            <p className="font-display text-lg font-bold text-pine-800">{t}</p>
-            <p className="mt-1 text-sm text-pine-900/70">{d}</p>
-          </div>
-        ))}
+      <div className="confidence-strip"><p>Small entry.<br /><strong>Clear expectations.</strong></p><span><Icon name="ticket" /> Tickets from PKR 1</span><span><Icon name="shield" /> Verifiable results</span><span><Icon name="wallet" /> EasyPaisa & JazzCash</span></div>
+
+      <section id="draws" className="draw-section">
+        <div className="section-heading"><div><p className="eyebrow">FIND YOUR NEXT POSSIBILITY</p><h2>Discover the draws<span>.</span></h2></div><Link href="/winners" className="text-link">View past results <Icon name="arrow" /></Link></div>
+        {draws.length ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{draws.map(d => <DrawCard key={d.id} draw={d} />)}</div> : <div className="draw-empty"><div className="empty-icon"><Icon name="ticket" /></div><div><h3>{unavailable ? "Draws are temporarily unavailable" : "Good things are worth the wait."}</h3><p>{unavailable ? "We couldn’t load the draw list. Please try again shortly before making a payment." : "There are no open draws right now. Check back for the next opportunity."}</p></div><a href="/" className="btn-ghost">Refresh draws <Icon name="arrow" /></a></div>}
+        <p className="draw-disclaimer">18+ only. A ticket is a chance to win, never a guarantee. Check each draw’s price, deadline and ticket limit before entering.</p>
       </section>
 
-      <section id="draws" className="scroll-mt-20">
-        <h2 className="mb-4 font-display text-2xl font-bold text-pine-900">Live draws</h2>
-        {draws.length === 0 ? (
-          <div className="card p-8 text-center text-pine-900/70">
-            No draws are open right now. Check back soon.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {draws.map((d) => (
-              <DrawCard key={d.id} draw={d} />
-            ))}
-          </div>
-        )}
-      </section>
+      <section id="how-it-works" className="how-section"><div className="how-intro"><p className="eyebrow">A SIMPLE START</p><h2>Three steps.<br />Nothing hidden.</h2><p>From your first rupya to the final result, here’s how it works.</p><Link href="/login" className="text-link">Get started <Icon name="arrow" /></Link></div><div className="steps">{[
+        ["01", "wallet", "Top up your wallet", "Add PKR 50 or more using EasyPaisa or JazzCash. Your payment is manually checked before credit is added."],
+        ["02", "ticket", "Choose your possibility", "Pick an open draw, review its rules and buy tickets. Your assigned ticket numbers appear in your account."],
+        ["03", "shield", "Check the result", "Once every ticket sells, the admin runs the draw. The published proof lets you independently verify the winner."],
+      ].map(([number, icon, title, description]) => <div className="step" key={number}><span className="step-number">{number}</span><div><h3>{title}</h3><p>{description}</p></div><Icon name={icon as "wallet" | "ticket" | "shield"} /></div>)}</div></section>
+
+      <section id="fairness" className="fairness-panel"><div><p className="eyebrow">TRUST STARTS WITH TRANSPARENCY</p><h2>Don’t just take our word.<br /><em>Check the proof.</em></h2><p>Each completed draw publishes its result and verification details. Follow the ticket progress and inspect the formula behind the winning number.</p><Link href="/winners" className="btn-gold">Explore published results <Icon name="arrow" /></Link></div><div className="fairness-details"><Icon name="shield" /><h3>Know before you enter</h3><p><Icon name="check" /> A draw runs only after every ticket sells.</p><p><Icon name="check" /> The admin initiates the draw manually.</p><p><Icon name="check" /> Cancelled draws return ticket funds to wallets.</p><p><Icon name="check" /> Completed results can be checked publicly.</p></div></section>
+      <section className="faq-section"><div><p className="eyebrow">THE DETAILS MATTER</p><h2>A little more clarity.</h2></div><div>{[
+        ["Is a prize guaranteed?", "No. Each ticket gives you a chance in that draw. Only the selected winning ticket wins the prize."],
+        ["When does the draw happen?", "Every ticket must sell first. The admin then initiates the draw; reaching the ticket target does not immediately select a winner."],
+        ["What happens if a draw is cancelled?", "When the admin cancels a draw, its ticket payments are refunded to the participants’ 1Rupya wallets."],
+        ["How can I verify a winner?", "Open Past results and choose Verify result on a completed draw to inspect the published proof and recalculate the winning ticket."],
+      ].map(([q,a]) => <details key={q}><summary>{q}<span>+</span></summary><p>{a}</p></details>)}</div></section>
     </div>
   );
 }

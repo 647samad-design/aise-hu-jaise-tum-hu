@@ -1,18 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { shortDate, type Draw } from "@/lib/format";
+import { getPublicDraws } from "@/lib/public-draws";
+import { shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function WinnersPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("draws")
-    .select("*")
-    .eq("status", "drawn")
-    .order("drawn_at", { ascending: false })
-    .limit(50);
-  const draws = (data ?? []) as Draw[];
+  const { draws, unavailable } = await getPublicDraws(true);
 
   return (
     <div className="space-y-5">
@@ -22,7 +15,7 @@ export default async function WinnersPage() {
       </div>
 
       {draws.length === 0 ? (
-        <div className="card p-8 text-center text-pine-900/70">No draws completed yet. Be the first winner!</div>
+        <div className="card p-8 text-center text-pine-900/70">{unavailable ? "Results are temporarily unavailable. Please try again shortly." : "No draws have been completed yet. Published results will appear here."}</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {draws.map((d) => (
@@ -36,7 +29,7 @@ export default async function WinnersPage() {
               <div className="space-y-1 p-4">
                 <p className="font-display text-lg font-bold text-pine-900">{d.title}</p>
                 <p className="text-sm">
-                  🏆 <b>{d.winner_label}</b> · ticket #{d.winner_ticket}
+                  <b>{d.winner_label}</b> · ticket #{d.winner_ticket}
                 </p>
                 <p className="text-xs text-pine-900/60">{d.drawn_at ? shortDate(d.drawn_at) : ""}</p>
                 <Link href={`/verify/${d.id}`} className="text-sm font-semibold text-pine-700 underline">

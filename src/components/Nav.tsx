@@ -4,19 +4,24 @@ import { signOut } from "@/app/actions";
 import { pkr } from "@/lib/format";
 
 export default async function Nav() {
-  const { user, profile } = await getSessionProfile();
+  const session = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ? await getSessionProfile().catch(() => null)
+    : null;
+  const user = session?.user;
+  const profile = session?.profile;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/5 bg-cream/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+    <header className="site-header">
+      <div className="nav-inner">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-pine-600 to-pine-900 font-display text-lg font-bold text-gold-400 ring-2 ring-gold-400">
+          <span className="brand-mark">
             1
           </span>
-          <span className="font-display text-xl font-bold text-pine-800">Rupya</span>
+          <span className="brand-name">Rupya</span>
         </Link>
 
-        <nav className="ml-auto flex items-center gap-1 text-sm font-medium">
+        <div className="nav-links"><Link href="/#draws">Explore draws</Link><Link href="/#how-it-works">How it works</Link><Link href="/#fairness">Our promise</Link></div>
+        <nav aria-label="Account and results" className="ml-auto flex items-center gap-1 text-sm font-medium">
           <Link href="/winners" className="rounded-full px-3 py-2 text-pine-800 hover:bg-pine-50">
             Winners
           </Link>
