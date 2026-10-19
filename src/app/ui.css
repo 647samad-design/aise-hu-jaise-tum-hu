@@ -116,7 +116,7 @@
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; background: #eef1ea; border-radius: 10px; padding: 4px; }
 .seg button { padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #5e7064; transition: background .2s, color .2s; }
-.seg button[aria-selected="true"] { background: #fff; color: var(--forest); box-shadow: 0 1px 3px #103f3420; }
+.seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: #fff; color: var(--forest); box-shadow: 0 1px 3px #103f3420; }
 
 /* ------------------------------------------------------------ form fields */
 .field { display: grid; gap: 7px; }

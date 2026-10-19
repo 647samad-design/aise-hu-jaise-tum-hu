@@ -6,8 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 export async function compressImage(file: File, max = 1600, quality = 0.82): Promise<Blob> {
   if (!file.type.startsWith("image/")) throw new Error("Please choose an image file");
   if (file.size > 15 * 1024 * 1024) throw new Error("That image is too large (max 15 MB)");
+  const ok = ["image/jpeg", "image/png", "image/webp"];
   const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
+  if (!bitmap) {
+    if (ok.includes(file.type)) return file;
+    throw new Error("This photo format isn't supported. Please upload a JPG or PNG screenshot.");
+  }
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
@@ -18,7 +22,8 @@ export async function compressImage(file: File, max = 1600, quality = 0.82): Pro
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", quality));
-  return blob && blob.size < file.size ? blob : file;
+  if (blob && (blob.size < file.size || !ok.includes(file.type))) return blob;
+  return ok.includes(file.type) ? file : (blob ?? file);
 }
 
 /** SHA-256 of the original file, used to stop the same screenshot being submitted twice. */

@@ -46,7 +46,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (!user) redirect("/login?next=/admin");
   if (!profile?.is_admin) redirect("/");
 
-  const [{ data: stats }, { data: pendingRaw }] = await Promise.all([
+  const [{ data: stats }, { data: pendingRaw, error: pendingError }] = await Promise.all([
     supabase.rpc("admin_stats"),
     supabase
       .from("topups")
@@ -88,6 +88,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         ))}
       </nav>
 
+      {pendingError && (
+        <div className="notice notice-error mb-6" role="alert">
+          Could not load payments: {pendingError.message}. If you just updated the app, run <b>supabase/schema.sql</b> again in the Supabase SQL editor.
+        </div>
+      )}
       {tab === "payments" && <Payments supabase={supabase} raw={raw} />}
       {tab === "draws" && <Draws supabase={supabase} />}
       {tab === "new" && (

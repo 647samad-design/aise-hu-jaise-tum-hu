@@ -25,7 +25,6 @@ export default async function DrawOg({ params }: { params: Promise<{ id: string 
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#103f34", color: "#faf8ed" }}>
         <div style={{ width: 560, height: 630, display: "flex", alignItems: "center", justifyContent: "center", background: "#e2e9df" }}>
           {d?.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={d.image_url} alt="" width={560} height={630} style={{ objectFit: "cover", width: 560, height: 630 }} />
           ) : (
             <div style={{ fontSize: 300, color: "#3d7a5f55" }}>1</div>

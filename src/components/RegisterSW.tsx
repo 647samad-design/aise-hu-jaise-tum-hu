@@ -41,6 +41,7 @@ export default function RegisterSW() {
 
   return (
     <div className="install-banner fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-pine-900 p-3 text-white shadow-card">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/icons/icon-192.png" alt="" width={44} height={44} className="rounded-xl" />
       <div className="flex-1 text-sm">
         <p className="font-semibold">Get the 1Rupya app</p>
