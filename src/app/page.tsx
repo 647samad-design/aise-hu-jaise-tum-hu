@@ -61,7 +61,7 @@ export default async function Home() {
 
       <section id="draws" className="draw-section">
         <div className="section-heading"><div><p className="eyebrow">FIND YOUR NEXT POSSIBILITY</p><h2>Discover the draws<span>.</span></h2></div><Link href="/winners" className="text-link">View past results <Icon name="arrow" /></Link></div>
-        {draws.length ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{draws.map(d => <DrawCard key={d.id} draw={d} />)}</div> : <div className="draw-empty"><div className="empty-icon"><Icon name="ticket" /></div><div><h3>{unavailable ? "Draws are temporarily unavailable" : "Good things are worth the wait."}</h3><p>{unavailable ? "We couldn’t load the draw list. Please try again shortly before making a payment." : "There are no open draws right now. Check back for the next opportunity."}</p></div><a href="/" className="btn-ghost">Refresh draws <Icon name="arrow" /></a></div>}
+        {draws.length ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{draws.map(d => <DrawCard key={d.id} draw={d} />)}</div> : <div className="draw-empty"><div className="empty-icon"><Icon name="ticket" /></div><div><h3>{unavailable ? "Draws are temporarily unavailable" : "Good things are worth the wait."}</h3><p>{unavailable ? "We couldn’t load the draw list. Please try again shortly before making a payment." : "There are no open draws right now. Check back for the next opportunity."}</p></div><Link href="/" className="btn-ghost">Refresh draws <Icon name="arrow" /></Link></div>}
         <p className="draw-disclaimer">18+ only. A ticket is a chance to win, never a guarantee. Check each draw’s price, deadline and ticket limit before entering.</p>
       </section>
 

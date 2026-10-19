@@ -198,7 +198,7 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
           <label htmlFor="method">Paid with</label>
           <div className="seg seg-3" role="radiogroup">
             {[["easypaisa", "EasyPaisa"], ["jazzcash", "JazzCash"], ["bank", "Bank / Raast"]].map(([v, l]) => (
-              <button key={v} type="button" role="radio" aria-selected={method === v} aria-checked={method === v} onClick={() => setMethod(v)}>{l}</button>
+              <button key={v} type="button" role="radio" aria-checked={method === v} onClick={() => setMethod(v)}>{l}</button>
             ))}
           </div>
         </div>

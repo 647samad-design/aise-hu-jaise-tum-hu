@@ -192,11 +192,21 @@ export async function emailParticipants(drawId: string): Promise<ActionResult> {
   const { data: draw } = await supabase.from("draws").select("id, title, status, winner_ticket, winner_label, winner_user_id, sold_tickets, target_tickets, participants").eq("id", drawId).single();
   if (!draw) return { ok: false, message: "Draw not found" };
 
-  const { data: rows, error } = await supabase.from("tickets").select("user_id, number, profiles(email, full_name)").eq("draw_id", drawId).limit(100000);
-  if (error) return fail(error);
   type Row = { user_id: string; number: number; profiles: { email: string | null; full_name: string | null } | null };
+  const rows: Row[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("user_id, number, profiles(email, full_name)")
+      .eq("draw_id", drawId)
+      .order("number")
+      .range(from, from + 999);
+    if (error) return fail(error);
+    rows.push(...((data ?? []) as unknown as Row[]));
+    if (!data || data.length < 1000) break;
+  }
   const people = new Map<string, { email: string; name: string; numbers: number[] }>();
-  for (const r of (rows ?? []) as unknown as Row[]) {
+  for (const r of rows) {
     if (!r.profiles?.email) continue;
     const p = people.get(r.user_id) ?? { email: r.profiles.email, name: (r.profiles.full_name ?? "").split(" ")[0] || "there", numbers: [] };
     p.numbers.push(r.number);
@@ -289,7 +299,12 @@ export async function announce(_prev: ActionResult | null, formData: FormData): 
   revalidatePath("/", "layout");
   if (formData.get("email") !== "on") return { ok: true, message: "Sent. Every player will see it in their notifications." };
   if (!emailConfigured()) return { ok: true, message: "Notification sent. Email is not set up yet, so no emails went out." };
-  const { data: players } = await supabase.from("profiles").select("email, full_name").not("email", "is", null).limit(5000);
+  const players: { email: string | null; full_name: string | null }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase.from("profiles").select("email, full_name").not("email", "is", null).order("created_at").range(from, from + 999);
+    players.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
   const title = String(formData.get("title") ?? "");
   const body = String(formData.get("body") ?? "");
   const link = String(formData.get("link") ?? "") || "/#draws";

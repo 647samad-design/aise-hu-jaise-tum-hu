@@ -285,6 +285,7 @@ grant select on public.notifications to authenticated;
 grant select on public.app_settings to anon, authenticated;
 grant select on public.email_log to authenticated;
 grant select on public.draw_participants_public to anon, authenticated;
+grant execute on function public.public_stats() to anon, authenticated;
 -- The secret seeds must never be readable from the browser, not even as an empty result.
 revoke all on public.draw_secrets from anon, authenticated;
 

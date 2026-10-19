@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { createDraw, type ActionResult } from "@/app/actions";
 import ImageUploader from "@/components/admin/ImageUploader";
 
@@ -9,6 +9,15 @@ export default function AdminDrawForm() {
   const [images, setImages] = useState<string[]>([]);
   const [price, setPrice] = useState(2);
   const [target, setTarget] = useState(100);
+
+  // Start the next draw with a clean form (photos live in state, not in the <form>).
+  useEffect(() => {
+    if (state?.ok) {
+      setImages([]);
+      setPrice(2);
+      setTarget(100);
+    }
+  }, [state]);
 
   return (
     <form key={state?.ok ? `ok-${Date.now()}` : "form"} action={action} className="grid gap-4 sm:grid-cols-2">
