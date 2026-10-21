@@ -34,7 +34,7 @@ export default function DrawManager({ draw, lastEmail, emailReady }: Props) {
             type="button"
             className="btn-gold !py-2"
             disabled={pending}
-            title={emailReady ? undefined : "Set RESEND_API_KEY and EMAIL_FROM first"}
+            title={emailReady ? undefined : "Set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD first"}
             onClick={() => {
               const again = lastEmail && lastEmail.kind === (draw.status === "drawn" ? "result" : "update");
               if (!window.confirm(`${again ? "You already sent this email. Send again? " : ""}Send to ${draw.participants} participant(s)?`)) return;

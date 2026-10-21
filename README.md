@@ -80,13 +80,26 @@ Transaction ID can never be used twice.
 Go to **/admin → Payment settings**: upload your QR, enter account name, EasyPaisa / JazzCash numbers, bank/IBAN,
 support WhatsApp and the minimum top-up. They show on Wallet and Pay & join immediately — no redeploy.
 
-## Emails
+## Emails (Gmail)
 
-1. Create a free account at [resend.com](https://resend.com) (3,000 emails/month free) and verify your domain.
-2. Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `1Rupya <draws@yourdomain.pk>`) to your Netlify/Vercel env vars, redeploy.
-3. Check **/admin → Payment settings → Email status**.
+App emails (approval "You're in!", rejection, "email all participants", announcements) go out from your Gmail:
 
-Without email set up everything still works; players get in-app notifications only.
+1. Google Account → **Security** → turn on **2-Step Verification**.
+2. Google Account → search **App passwords** → create one named `1Rupya` → copy the 16 letters.
+3. In Netlify env vars set `EMAIL_HOST_USER` (your Gmail), `EMAIL_HOST_PASSWORD` (the 16 letters) and optionally
+   `DEFAULT_FROM_EMAIL` (`1Rupya <your@gmail.com>`), then redeploy. Check **/setup-check** → Emails ✓.
+
+Gmail sends about 500 emails a day from a normal account — enough to start. Sign-up confirmation and password-reset
+emails come from Supabase; to send those from Gmail too: Supabase → Authentication → Emails → **SMTP Settings** →
+host `smtp.gmail.com`, port `465`, username = your Gmail, password = the same app password, sender = your Gmail.
+
+## Google sign-in
+
+1. Google Cloud Console → APIs & Services → Credentials → your **OAuth client (Web application)**.
+2. **Authorized redirect URIs**: add `https://YOUR-PROJECT.supabase.co/auth/v1/callback` (your Supabase Project URL + that path).
+3. Supabase → Authentication → Sign In / Providers → **Google** → enable, paste **Client ID** and **Client Secret** → Save.
+
+These two values are not app environment variables — they live only in Supabase.
 
 ## SEO checklist after going live
 

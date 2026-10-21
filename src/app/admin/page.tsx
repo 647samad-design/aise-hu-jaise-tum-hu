@@ -9,7 +9,7 @@ import DrawManager from "@/components/admin/DrawManager";
 import PaymentRow, { type AdminPayment } from "@/components/admin/PaymentRow";
 import SettingsForm from "@/components/admin/SettingsForm";
 import { getSessionProfile } from "@/lib/auth";
-import { emailConfigured } from "@/lib/email";
+import { EMAIL_SETUP_HINT, emailConfigured } from "@/lib/email";
 import { isUpcoming, longDate, pkr, shortDate, type Draw } from "@/lib/format";
 import { getPaySettings } from "@/lib/settings";
 
@@ -115,7 +115,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="panel-sub">What players see when they pay. Changes apply immediately — no redeploy needed.</p>
           <SettingsForm initial={await getPaySettings()} />
           <div className="mt-6 rounded-lg bg-pine-50 p-4 text-sm text-pine-900/80">
-            <b>Email status:</b> {emailConfigured() ? "set up ✓ — approval emails and participant emails are on." : "not set up. Add RESEND_API_KEY and EMAIL_FROM in your hosting env vars (see README → Emails)."}
+            <b>Email status:</b> {emailConfigured() ? `set up ✓ — sending from ${process.env.EMAIL_HOST_USER}. Approval and participant emails are on (Gmail allows about 500 a day).` : `not set up. ${EMAIL_SETUP_HINT}`}
           </div>
         </section>
       )}

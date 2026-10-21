@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/validation";
-import { emailConfigured, layout, sendEmails, type Mail } from "@/lib/email";
+import { EMAIL_SETUP_HINT, emailConfigured, layout, sendEmails, type Mail } from "@/lib/email";
 
 export type ActionResult = { ok: boolean; message?: string; data?: Record<string, string | number> };
 
@@ -188,7 +188,7 @@ export async function saveSettings(values: Record<string, string>): Promise<Acti
 /** Emails everyone holding a ticket in this draw: the result (if drawn) or a progress update. */
 export async function emailParticipants(drawId: string): Promise<ActionResult> {
   const supabase = await createClient();
-  if (!emailConfigured()) return { ok: false, message: "Email is not set up yet. Add RESEND_API_KEY and EMAIL_FROM (see README)." };
+  if (!emailConfigured()) return { ok: false, message: `Email is not set up yet. ${EMAIL_SETUP_HINT}` };
 
   const { data: draw } = await supabase.from("draws").select("id, title, status, winner_ticket, winner_label, winner_user_id, sold_tickets, target_tickets, participants").eq("id", drawId).single();
   if (!draw) return { ok: false, message: "Draw not found" };
