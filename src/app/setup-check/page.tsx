@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
-import { emailConfigured } from "@/lib/email";
+import { EMAIL_SETUP_HINT, emailConfigured } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Setup check · 1Rupya", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -82,10 +82,10 @@ async function run(): Promise<Check[]> {
     fix: siteOk ? undefined : "Set NEXT_PUBLIC_SITE_URL to your live address, e.g. https://1rupya.netlify.app (no / at the end). Also add https://YOUR-SITE/auth/callback in Supabase → Authentication → URL Configuration → Redirect URLs.",
   });
   out.push({
-    name: "Emails (Resend)",
+    name: "Emails (Gmail)",
     ok: emailConfigured(),
-    detail: emailConfigured() ? "RESEND_API_KEY and EMAIL_FROM set" : "Not set — the app works, but no emails are sent",
-    fix: emailConfigured() ? undefined : "Add RESEND_API_KEY and EMAIL_FROM in Netlify environment variables, then redeploy.",
+    detail: emailConfigured() ? `EMAIL_HOST_USER and EMAIL_HOST_PASSWORD set (${process.env.EMAIL_HOST_USER})` : "Not set — the app works, but no emails are sent",
+    fix: emailConfigured() ? undefined : EMAIL_SETUP_HINT,
   });
   return out;
 }

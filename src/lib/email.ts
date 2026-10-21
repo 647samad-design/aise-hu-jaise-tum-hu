@@ -1,38 +1,70 @@
 import "server-only";
 import { SITE_URL } from "@/lib/site";
 
-// Emails are sent with Resend (https://resend.com, free tier: 3,000/month, 100/day).
-// Set RESEND_API_KEY and EMAIL_FROM (e.g. "1Rupya <draws@yourdomain.pk>" on a domain you verified in Resend).
-// Without them the app still works; email buttons simply report that email is not set up.
+// Emails are sent through your own Gmail account (SMTP).
+// Env vars (server-only — never NEXT_PUBLIC_):
+//   EMAIL_HOST_USER      your Gmail address, e.g. you@gmail.com
+//   EMAIL_HOST_PASSWORD  a 16-letter Google *App Password* (not your normal Gmail password)
+//   DEFAULT_FROM_EMAIL   optional, e.g. "1Rupya <you@gmail.com>" (must be the same Gmail address)
+//   EMAIL_HOST / EMAIL_PORT  optional, default smtp.gmail.com / 465 (works for any SMTP provider)
+// Gmail allows roughly 500 emails a day from a normal account.
+// Without these the app still works; email buttons simply report that email is not set up.
+
+import nodemailer from "nodemailer";
 
 export type Mail = { to: string; subject: string; html: string; text: string };
 
-export const emailConfigured = () => Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+const user = () => (process.env.EMAIL_HOST_USER ?? "").trim();
+const pass = () => (process.env.EMAIL_HOST_PASSWORD ?? "").replace(/\s+/g, ""); // Google shows app passwords with spaces
+
+export const emailConfigured = () => Boolean(user() && pass());
+
+export const EMAIL_SETUP_HINT = "Add EMAIL_HOST_USER and EMAIL_HOST_PASSWORD (Gmail app password) in Netlify environment variables, then redeploy.";
 
 export async function sendEmails(mails: Mail[]): Promise<{ sent: number; error?: string }> {
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  if (!key || !from) return { sent: 0, error: "Email is not set up (RESEND_API_KEY / EMAIL_FROM)." };
+  if (!emailConfigured()) return { sent: 0, error: `Email is not set up. ${EMAIL_SETUP_HINT}` };
+  const port = Number(process.env.EMAIL_PORT || 465);
+  const transport = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port,
+    secure: port === 465,
+    auth: { user: user(), pass: pass() },
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
+  });
+  const from = process.env.DEFAULT_FROM_EMAIL?.trim() || `1Rupya <${user()}>`;
   let sent = 0;
-  for (let i = 0; i < mails.length; i += 100) {
-    const chunk = mails.slice(i, i + 100).map((m) => ({ from, to: [m.to], subject: m.subject, html: m.html, text: m.text }));
-    try {
-      const res = await fetch("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(chunk),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        return { sent, error: `Email service said ${res.status}: ${body.slice(0, 160)}` };
+  let error: string | undefined;
+  try {
+    // Small batches in parallel: fast enough for a few hundred players, gentle on Gmail.
+    for (let i = 0; i < mails.length; i += 5) {
+      const batch = mails.slice(i, i + 5);
+      const results = await Promise.allSettled(
+        batch.map((m) => transport.sendMail({ from, to: m.to, subject: m.subject, html: m.html, text: m.text })),
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled") sent++;
+        else error ??= friendly(r.reason);
       }
-      sent += chunk.length;
-    } catch (e) {
-      return { sent, error: e instanceof Error ? e.message : "Email failed" };
+      if (error && sent === 0 && i === 0) break; // wrong password etc. — don't hammer Gmail
     }
+  } finally {
+    transport.close();
   }
-  return { sent };
+  return error ? { sent, error } : { sent };
+}
+
+function friendly(e: unknown): string {
+  const m = e instanceof Error ? e.message : String(e);
+  if (/535|Username and Password not accepted|Invalid login/i.test(m))
+    return "Gmail rejected the login. Use a Google App Password (Google Account → Security → App passwords), not your normal password.";
+  if (/limit|quota|550 5\.4\.5/i.test(m)) return "Gmail's daily sending limit was reached. Try again tomorrow.";
+  if (/timeout|ETIMEDOUT|ECONNREFUSED/i.test(m)) return "Couldn't reach Gmail. Please try again.";
+  return m.slice(0, 200);
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
