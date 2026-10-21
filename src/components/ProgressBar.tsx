@@ -1,17 +1,17 @@
+"use client";
+
+import { useT } from "@/components/I18nProvider";
+
 export default function ProgressBar({ sold, target }: { sold: number; target: number }) {
+  const t = useT();
   const pct = Math.min(100, Math.round((sold / target) * 100));
   return (
     <div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-pine-100">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-pine-500 to-gold-400 transition-all"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div style={{ width: `${pct}%` }} />
       </div>
       <p className="mt-1.5 flex justify-between text-xs font-medium text-pine-900/70">
-        <span>
-          {sold.toLocaleString()} / {target.toLocaleString()} tickets sold
-        </span>
+        <span>{t("prog_sold", { sold: sold.toLocaleString(), target: target.toLocaleString() })}</span>
         <span>{pct}%</span>
       </p>
     </div>

@@ -4,6 +4,8 @@ import { pkr } from "@/lib/format";
 import Icon from "@/components/Icon";
 import UserMenu from "@/components/UserMenu";
 import { BottomTabs, NavLinks } from "@/components/NavLinks";
+import LangToggle from "@/components/LangToggle";
+import { getT } from "@/lib/i18n/server";
 
 export default async function Nav() {
   const session =
@@ -13,6 +15,7 @@ export default async function Nav() {
   const user = session?.user;
   const profile = session?.profile;
   const name = profile?.full_name || user?.email || "";
+  const t = await getT();
 
   // Unread = own or broadcast notifications newer than the last time the player opened the list.
   let unread = 0;
@@ -28,7 +31,7 @@ export default async function Nav() {
     <>
       <header className="site-header">
         <div className="nav-inner">
-          <Link href="/" className="flex items-center gap-2" aria-label="1Rupya home">
+          <Link href="/" className="flex items-center gap-2" aria-label="1Rupya home" dir="ltr">
             <span className="brand-mark">1</span>
             <span className="brand-name">Rupya</span>
           </Link>
@@ -36,13 +39,14 @@ export default async function Nav() {
           <NavLinks />
 
           <nav aria-label="Account" className="nav-account">
+            <LangToggle />
             {user ? (
               <>
-                <Link href="/notifications" className="bell" aria-label={unread ? `Notifications, ${unread} new` : "Notifications"}>
+                <Link href="/notifications" className="bell" aria-label={unread ? t("nav_notifications_n", { n: unread }) : t("nav_notifications")}>
                   <Icon name="bell" size={20} />
                   {unread > 0 && <span className="bell-count">{unread > 9 ? "9+" : unread}</span>}
                 </Link>
-                <Link href="/wallet" className="wallet-chip" title="Wallet balance">
+                <Link href="/wallet" className="wallet-chip" title={t("nav_wallet")}>
                   <Icon name="wallet" size={16} />
                   {pkr(profile?.balance ?? 0)}
                 </Link>
@@ -50,8 +54,8 @@ export default async function Nav() {
               </>
             ) : (
               <>
-                <Link href="/login" className="nav-signin">Sign in</Link>
-                <Link href="/signup" className="nav-cta">Get started</Link>
+                <Link href="/login" className="nav-signin">{t("nav_signin")}</Link>
+                <Link href="/signup" className="nav-cta">{t("nav_signup")}</Link>
               </>
             )}
           </nav>

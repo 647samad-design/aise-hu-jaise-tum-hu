@@ -4,10 +4,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/i18n/server";
 import {
+  authErrorKey,
   EMAIL_RE,
   PHONE_RE,
-  friendlyAuthError,
   normalisePhone,
   passwordError,
   safeNext,
@@ -39,14 +40,15 @@ const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 // ------------------------------------------------------------------ sign in
 
 export async function signInWithPassword(_prev: AuthState | null, fd: FormData): Promise<AuthState> {
+  const t = await getT();
   const email = str(fd, "email").toLowerCase();
   const password = String(fd.get("password") ?? "");
   const next = safeNext(fd.get("next"));
   const values = { email };
 
   const fields: Record<string, string> = {};
-  if (!EMAIL_RE.test(email)) fields.email = "Enter a valid email address";
-  if (!password) fields.password = "Enter your password";
+  if (!EMAIL_RE.test(email)) fields.email = t("e_email");
+  if (!password) fields.password = t("e_pw_enter");
   if (Object.keys(fields).length) return { ok: false, fields, values };
 
   const supabase = await createClient();
@@ -55,7 +57,7 @@ export async function signInWithPassword(_prev: AuthState | null, fd: FormData):
     const unconfirmed = error.message.toLowerCase().includes("not confirmed");
     return {
       ok: false,
-      message: friendlyAuthError(error.message),
+      message: t(authErrorKey(error.message)),
       values,
       kind: unconfirmed ? "unconfirmed" : undefined,
       email,
@@ -74,9 +76,10 @@ export async function signInWithPassword(_prev: AuthState | null, fd: FormData):
 // ------------------------------------------------------------------ magic link (passwordless)
 
 export async function sendMagicLink(_prev: AuthState | null, fd: FormData): Promise<AuthState> {
+  const t = await getT();
   const email = str(fd, "email").toLowerCase();
   const next = safeNext(fd.get("next"));
-  if (!EMAIL_RE.test(email)) return { ok: false, fields: { email: "Enter a valid email address" }, values: { email } };
+  if (!EMAIL_RE.test(email)) return { ok: false, fields: { email: t("e_email") }, values: { email } };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
@@ -88,14 +91,15 @@ export async function sendMagicLink(_prev: AuthState | null, fd: FormData): Prom
   });
   // Don't reveal whether the email has an account.
   if (error && !error.message.toLowerCase().includes("signups not allowed")) {
-    return { ok: false, message: friendlyAuthError(error.message), values: { email } };
+    return { ok: false, message: t(authErrorKey(error.message)), values: { email } };
   }
-  return { ok: true, kind: "sent", email, message: "If an account exists for this email, a sign-in link is on its way." };
+  return { ok: true, kind: "sent", email, message: t("ok_link_sent") };
 }
 
 // ------------------------------------------------------------------ sign up
 
 export async function signUp(_prev: AuthState | null, fd: FormData): Promise<AuthState> {
+  const t = await getT();
   const full_name = str(fd, "full_name").replace(/\s+/g, " ");
   const email = str(fd, "email").toLowerCase();
   const phone = normalisePhone(str(fd, "phone"));
@@ -106,13 +110,13 @@ export async function signUp(_prev: AuthState | null, fd: FormData): Promise<Aut
   const values = { full_name, email, phone };
 
   const fields: Record<string, string> = {};
-  if (full_name.length < 3) fields.full_name = "Enter your full name";
-  if (!EMAIL_RE.test(email)) fields.email = "Enter a valid email address";
-  if (!PHONE_RE.test(phone)) fields.phone = "Use a Pakistani mobile number, e.g. 03001234567";
-  const pwErr = passwordError(password);
-  if (pwErr) fields.password = pwErr;
-  if (!fields.password && password !== confirm) fields.confirm = "Passwords do not match";
-  if (!adult) fields.adult = "You must be 18 or older and accept the terms";
+  if (full_name.length < 3) fields.full_name = t("e_name");
+  if (!EMAIL_RE.test(email)) fields.email = t("e_email");
+  if (!PHONE_RE.test(phone)) fields.phone = t("e_phone");
+  if (passwordError(password)) fields.password = t("e_pw_weak");
+  // The confirm box is optional (the sign-up form uses show/hide instead); check it only when sent.
+  if (!fields.password && fd.has("confirm") && password !== confirm) fields.confirm = t("e_pw_match");
+  if (!adult) fields.adult = t("e_adult");
   if (Object.keys(fields).length) return { ok: false, fields, values };
 
   const supabase = await createClient();
@@ -124,11 +128,11 @@ export async function signUp(_prev: AuthState | null, fd: FormData): Promise<Aut
       data: { full_name, phone },
     },
   });
-  if (error) return { ok: false, message: friendlyAuthError(error.message), values };
+  if (error) return { ok: false, message: t(authErrorKey(error.message)), values };
 
   // With email confirmation ON, Supabase returns a user with no identities when the email is already taken.
   if (data.user && (data.user.identities?.length ?? 0) === 0) {
-    return { ok: false, message: friendlyAuthError("already registered"), values };
+    return { ok: false, message: t("e_exists"), values };
   }
 
   if (data.session) {
@@ -139,29 +143,31 @@ export async function signUp(_prev: AuthState | null, fd: FormData): Promise<Aut
 }
 
 export async function resendConfirmation(email: string): Promise<AuthState> {
-  if (!EMAIL_RE.test(email)) return { ok: false, message: "Enter a valid email address" };
+  const t = await getT();
+  if (!EMAIL_RE.test(email)) return { ok: false, message: t("e_email") };
   const supabase = await createClient();
   const { error } = await supabase.auth.resend({
     type: "signup",
     email,
     options: { emailRedirectTo: `${await siteOrigin()}/auth/callback` },
   });
-  if (error) return { ok: false, message: friendlyAuthError(error.message) };
-  return { ok: true, message: "Confirmation email sent again. Check your inbox and spam folder." };
+  if (error) return { ok: false, message: t(authErrorKey(error.message)) };
+  return { ok: true, message: t("ok_resent") };
 }
 
 // ------------------------------------------------------------------ password reset
 
 export async function requestPasswordReset(_prev: AuthState | null, fd: FormData): Promise<AuthState> {
+  const t = await getT();
   const email = str(fd, "email").toLowerCase();
-  if (!EMAIL_RE.test(email)) return { ok: false, fields: { email: "Enter a valid email address" }, values: { email } };
+  if (!EMAIL_RE.test(email)) return { ok: false, fields: { email: t("e_email") }, values: { email } };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${await siteOrigin()}/auth/callback?next=/reset-password`,
   });
   if (error && error.message.toLowerCase().includes("rate")) {
-    return { ok: false, message: friendlyAuthError(error.message), values: { email } };
+    return { ok: false, message: t(authErrorKey(error.message)), values: { email } };
   }
   // Same answer whether or not the account exists.
   return { ok: true, kind: "sent", email };
@@ -169,23 +175,23 @@ export async function requestPasswordReset(_prev: AuthState | null, fd: FormData
 
 /** Used both by /reset-password (after the email link) and by "Change password" in account settings. */
 export async function updatePassword(_prev: AuthState | null, fd: FormData): Promise<AuthState> {
+  const t = await getT();
   const password = String(fd.get("password") ?? "");
   const confirm = String(fd.get("confirm") ?? "");
   const after = fd.get("after") === "stay" ? null : safeNext(fd.get("next"), "/");
 
-  const pwErr = passwordError(password);
-  if (pwErr) return { ok: false, fields: { password: pwErr } };
-  if (password !== confirm) return { ok: false, fields: { confirm: "Passwords do not match" } };
+  if (passwordError(password)) return { ok: false, fields: { password: t("e_pw_weak") } };
+  if (password !== confirm) return { ok: false, fields: { confirm: t("e_pw_match") } };
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, message: "Your reset link has expired. Please request a new one." };
+  if (!user) return { ok: false, message: t("e_reset_expired") };
 
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { ok: false, message: friendlyAuthError(error.message) };
+  if (error) return { ok: false, message: t(authErrorKey(error.message)) };
 
   if (after) redirect(`${after}${after.includes("?") ? "&" : "?"}password=updated`);
-  return { ok: true, message: "Password updated." };
+  return { ok: true, message: t("ok_pw") };
 }

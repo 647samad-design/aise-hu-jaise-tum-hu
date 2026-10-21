@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import Icon, { type IconName } from "@/components/Icon";
 import { passwordChecks, passwordScore } from "@/lib/validation";
+import { useT } from "@/components/I18nProvider";
+import type { Key } from "@/lib/i18n/messages";
 
 type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
   name: string;
@@ -41,11 +43,12 @@ export function Field({ name, label, icon, error, hint, aside, id, ...rest }: Fi
   );
 }
 
-const LEVELS = ["", "Weak", "Fair", "Good", "Strong"];
+const LEVELS: Key[] = ["pw_weak", "pw_weak", "pw_fair", "pw_good", "pw_strong"];
+const CHECKS: Key[] = ["pw_c8", "pw_cletter", "pw_cnum"];
 
 export function PasswordField({
   name = "password",
-  label = "Password",
+  label,
   error,
   meter = false,
   aside,
@@ -60,6 +63,8 @@ export function PasswordField({
   autoComplete?: string;
   onValue?: (v: string) => void;
 }) {
+  const t = useT();
+  label = label ?? t("pw_label");
   const [show, setShow] = useState(false);
   const [value, setValue] = useState("");
   const score = passwordScore(value);
@@ -75,6 +80,7 @@ export function PasswordField({
         <input
           id={name}
           name={name}
+          dir="ltr"
           type={show ? "text" : "password"}
           autoComplete={autoComplete}
           required
@@ -90,7 +96,7 @@ export function PasswordField({
           type="button"
           className="field-toggle"
           onClick={() => setShow((s) => !s)}
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={show ? t("pw_hide") : t("pw_show")}
           aria-pressed={show}
         >
           <Icon name={show ? "eye-off" : "eye"} size={18} />
@@ -103,14 +109,14 @@ export function PasswordField({
               <span key={i} className={i <= score ? `on s${score}` : ""} />
             ))}
           </div>
-          <span className="pw-label">{LEVELS[score]}</span>
+          <span className="pw-label">{t(LEVELS[score]!)}</span>
         </div>
       )}
       {meter && value && (
         <ul className="pw-checks">
-          {passwordChecks(value).map((c) => (
+          {passwordChecks(value).map((c, i) => (
             <li key={c.label} className={c.ok ? "ok" : ""}>
-              <Icon name={c.ok ? "check" : "minus"} size={13} /> {c.label}
+              <Icon name={c.ok ? "check" : "minus"} size={13} /> {t(CHECKS[i]!)}
             </li>
           ))}
         </ul>

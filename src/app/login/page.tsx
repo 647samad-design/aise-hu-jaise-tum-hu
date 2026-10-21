@@ -3,31 +3,33 @@ import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
 import { safeNext } from "@/lib/validation";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Sign in · 1Rupya" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const next = safeNext(sp.next);
+  const t = await getT();
   const signupHref = next === "/" ? "/signup" : `/signup?next=${encodeURIComponent(next)}`;
 
   const banner =
     sp.error === "link" || sp.error === "auth"
-      ? { tone: "error" as const, text: "That sign-in link is invalid or has expired. Please sign in again." }
+      ? { tone: "error" as const, text: t("li_banner_link") }
       : sp.password === "updated"
-        ? { tone: "success" as const, text: "Password updated. Sign in with your new password." }
+        ? { tone: "success" as const, text: t("li_banner_pw") }
         : sp.next && sp.next !== "/"
-          ? { tone: "info" as const, text: "Please sign in to continue." }
+          ? { tone: "info" as const, text: t("li_banner_next") }
           : null;
 
   return (
     <AuthShell
-      eyebrow="WELCOME BACK"
-      title={<>Sign in to <em>1Rupya</em></>}
-      subtitle="Track your tickets, wallet and results in one place."
+      eyebrow={t("li_eyebrow")}
+      title={<>{t("li_title_a")}<em>1Rupya</em></>}
+      subtitle={t("li_sub")}
       footer={
         <p>
-          New to 1Rupya? <Link href={signupHref} className="auth-link">Create a free account</Link>
+          {t("li_new")} <Link href={signupHref} className="auth-link">{t("li_create")}</Link>
         </p>
       }
     >

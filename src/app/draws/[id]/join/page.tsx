@@ -7,6 +7,7 @@ import { Notice } from "@/components/auth/fields";
 import { getSessionProfile } from "@/lib/auth";
 import { isUpcoming, pkr, type Draw } from "@/lib/format";
 import { getPaySettings } from "@/lib/settings";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Pay & join · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -27,23 +28,24 @@ export default async function JoinPage({ params, searchParams }: { params: Promi
   const qty = Math.max(1, Math.min(maxQty, Math.floor(Number(qtyRaw) || 1)));
   const settings = await getPaySettings();
   const open = draw.status === "open" && !isUpcoming(draw);
+  const t = await getT();
 
   return (
     <div className="page narrow">
-      <Link href={`/draws/${id}`} className="back-link"><Icon name="arrow-left" size={16} /> Back to {draw.title}</Link>
+      <Link href={`/draws/${id}`} className="back-link"><Icon name="arrow-left" size={16} className="flip-rtl" /> {t("join_back", { title: draw.title })}</Link>
       <header className="page-head">
-        <p className="eyebrow">JOIN THE DRAW</p>
-        <h1>Pay &amp; <em>join</em></h1>
-        <p>Send the payment, upload the screenshot and we&apos;ll enter you as soon as it&apos;s verified. You&apos;ll get an email and a notification.</p>
+        <p className="eyebrow">{t("join_eyebrow")}</p>
+        <h1>{t("join_h1")}</h1>
+        <p>{t("join_p")}</p>
       </header>
       {!open ? (
-        <Notice tone="info">This draw isn&apos;t accepting entries right now.</Notice>
+        <Notice tone="info">{t("join_closed")}</Notice>
       ) : maxQty < 1 ? (
-        <Notice tone="info">You already hold the maximum tickets for this draw.</Notice>
+        <Notice tone="info">{t("join_max")}</Notice>
       ) : (
         <>
           <div className="qty-pick">
-            <span>Tickets:</span>
+            <span>{t("join_tickets")}</span>
             {[1, 2, 5, 10, 20].filter((n) => n <= maxQty).map((n) => (
               <Link key={n} href={`/draws/${id}/join?qty=${n}`} className="chip" aria-pressed={n === qty} replace scroll={false}>{n}</Link>
             ))}

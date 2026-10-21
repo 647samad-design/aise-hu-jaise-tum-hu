@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Icon from "@/components/Icon";
+import { getT } from "@/lib/i18n/server";
 
 // Two-column auth layout: brand story on the left (hidden on phones), form card on the right.
-export default function AuthShell({
+export default async function AuthShell({
   eyebrow,
   title,
   subtitle,
@@ -15,22 +16,23 @@ export default function AuthShell({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const t = await getT();
   return (
     <div className="auth-wrap">
       <aside className="auth-aside" aria-hidden="true">
         <div className="orbit orbit-one" />
         <div className="orbit orbit-two" />
-        <p className="eyebrow"><span className="status-dot" /> 1RUPYA MEMBERS</p>
+        <p className="eyebrow"><span className="status-dot" /> {t("au_aside_eyebrow")}</p>
         <h2>
-          Small tickets.<br />
-          <em>Verifiable</em> results.
+          {t("au_aside_h2a")}<br />
+          <em>{t("au_aside_h2b")}</em>
         </h2>
         <ul className="auth-points">
-          <li><Icon name="shield" size={18} /> Every winner can be re-checked by anyone</li>
-          <li><Icon name="ticket" size={18} /> Draws run only after every ticket sells</li>
-          <li><Icon name="wallet" size={18} /> Cancelled draws refund straight to your wallet</li>
+          <li><Icon name="shield" size={18} /> {t("au_aside_1")}</li>
+          <li><Icon name="ticket" size={18} /> {t("au_aside_2")}</li>
+          <li><Icon name="wallet" size={18} /> {t("au_aside_3")}</li>
         </ul>
-        <div className="auth-mini-ticket">
+        <div className="auth-mini-ticket" dir="ltr">
           <span>FROM PKR</span>
           <strong>1<small>.00</small></strong>
           <span className="stub">YOUR POSSIBILITY STARTS HERE</span>
@@ -38,7 +40,7 @@ export default function AuthShell({
       </aside>
 
       <section className="auth-panel">
-        <Link href="/" className="auth-back"><Icon name="arrow-left" size={16} /> Back to draws</Link>
+        <Link href="/" className="auth-back"><Icon name="arrow-left" size={16} className="flip-rtl" /> {t("back_draws")}</Link>
         <div className="auth-card">
           <p className="eyebrow">{eyebrow}</p>
           <h1 className="auth-title">{title}</h1>
@@ -51,10 +53,3 @@ export default function AuthShell({
   );
 }
 
-export function Divider({ children = "or" }: { children?: React.ReactNode }) {
-  return (
-    <div className="auth-divider" role="separator">
-      <span>{children}</span>
-    </div>
-  );
-}

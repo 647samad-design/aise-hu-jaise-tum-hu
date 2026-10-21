@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useT } from "@/components/I18nProvider";
 import { isStandalone, onInstallChange, getInstallEvent, promptInstall, setInstallEvent, type InstallEvent } from "@/lib/install";
 
 // Registers the service worker and shows an "Install 1Rupya" banner on phones.
 export default function RegisterSW() {
+  const t = useT();
   const [canInstall, setCanInstall] = useState(false);
   const [hidden, setHidden] = useState(true);
   const path = usePathname();
@@ -44,14 +46,14 @@ export default function RegisterSW() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/icons/icon-192.png" alt="" width={44} height={44} className="rounded-xl" />
       <div className="flex-1 text-sm">
-        <p className="font-semibold">Get the 1Rupya app</p>
-        <p className="text-white/70">Free · 1 tap · no Play Store needed. <Link href="/download" className="underline">How?</Link></p>
+        <p className="font-semibold">{t("inst_title")}</p>
+        <p className="text-white/70">{t("inst_sub")} <Link href="/download" className="underline">{t("inst_how")}</Link></p>
       </div>
       <button className="btn-gold !px-4 !py-2" onClick={() => void promptInstall()}>
-        Install
+        {t("inst_btn")}
       </button>
       <button
-        aria-label="Not now"
+        aria-label={t("inst_later")}
         className="px-2 text-xl leading-none text-white/70"
         onClick={() => {
           setHidden(true);

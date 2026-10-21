@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
+import { useT } from "@/components/I18nProvider";
 import { getInstallEvent, isStandalone, onInstallChange, platform, promptInstall } from "@/lib/install";
 
 export default function InstallPanel({ apkUrl }: { apkUrl?: string }) {
+  const t = useT();
   const [ready, setReady] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [os, setOs] = useState<"android" | "ios" | "desktop">("desktop");
@@ -26,7 +28,7 @@ export default function InstallPanel({ apkUrl }: { apkUrl?: string }) {
   if (installed) {
     return (
       <div className="dl-actions">
-        <p className="dl-installed"><Icon name="check" size={18} /> 1Rupya is installed on this device.</p>
+        <p className="dl-installed"><Icon name="check" size={18} /> {t("dl_installed")}</p>
       </div>
     );
   }
@@ -34,25 +36,25 @@ export default function InstallPanel({ apkUrl }: { apkUrl?: string }) {
   return (
     <div className="dl-actions">
       {os === "ios" ? (
-        <p className="dl-ios">On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b> (steps below).</p>
+        <p className="dl-ios">{t("dl_ios")}</p>
       ) : (
         <button
           className="btn-gold dl-btn"
           onClick={async () => {
             if (ready) {
               const ok = await promptInstall();
-              setMsg(ok ? "Installing… find 1Rupya on your home screen." : null);
+              setMsg(ok ? t("dl_installing") : null);
             } else {
-              setMsg(os === "android" ? "Open Chrome's ⋮ menu and tap “Install app” (or “Add to Home screen”)." : "Use the install icon in your browser's address bar, or scan the QR code with your phone.");
+              setMsg(os === "android" ? t("dl_chrome_menu") : t("dl_desktop"));
             }
           }}
         >
-          <Icon name="download" size={18} /> Install app
+          <Icon name="download" size={18} /> {t("dl_install")}
         </button>
       )}
       {apkUrl && (
         <a href={apkUrl} className="btn-ghost dl-btn" download>
-          <Icon name="android" size={18} /> Download APK
+          <Icon name="android" size={18} /> {t("dl_apk")}
         </a>
       )}
       {msg && <p className="dl-msg">{msg}</p>}

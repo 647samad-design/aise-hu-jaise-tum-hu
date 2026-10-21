@@ -1,4 +1,5 @@
-export const pkr = (n: number) => `PKR ${n.toLocaleString("en-PK")}`;
+// Wrapped in invisible left-to-right isolates so "PKR 1,240" never gets scrambled inside Urdu text.
+export const pkr = (n: number) => `\u2066PKR ${n.toLocaleString("en-PK")}\u2069`;
 
 export function timeLeft(iso: string | null): string | null {
   if (!iso) return null;
