@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+// Fonts are self-hosted (faster in Pakistan, no Google request). Only the needed weights.
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/manrope/800.css";
+import "@fontsource/noto-nastaliq-urdu/400.css";
+import "@fontsource/noto-nastaliq-urdu/600.css";
 import "./globals.css";
 import "./ui.css";
 import Nav from "@/components/Nav";
@@ -8,6 +15,8 @@ import RegisterSW from "@/components/RegisterSW";
 import { FlashToast } from "@/components/ClientBits";
 import JsonLd from "@/components/JsonLd";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { I18nProvider } from "@/components/I18nProvider";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -40,17 +49,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const support = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
+  const t = await getT();
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      </head>
+    <html lang={t.lang} dir={t.lang === "ur" ? "rtl" : "ltr"}>
       <body>
+        <I18nProvider lang={t.lang}>
         <JsonLd
           data={{
             "@context": "https://schema.org",
@@ -60,32 +65,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             ],
           }}
         />
-        <a href="#main" className="skip-link">Skip to content</a>
+        <a href="#main" className="skip-link">{t("skip")}</a>
         <Nav />
         <main id="main" className="site-main">{children}</main>
         <footer className="site-footer">
           <div>
-            <Link href="/" className="footer-brand">1Rupya<span>Small tickets. Big possibilities.</span></Link>
-            <p>Made for possibility. Built on transparency.</p>
+            <Link href="/" className="footer-brand">1Rupya<span>{t("brand_tagline")}</span></Link>
+            <p>{t("foot_made")}</p>
           </div>
           <div className="footer-links">
-            <Link href="/#draws">Explore draws</Link>
-            <Link href="/winners">Past results</Link>
-            <Link href="/#fairness">Fairness</Link>
-            <Link href="/terms">Terms</Link>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/download">Get the app</Link>
-            {support && <a href={`https://wa.me/${support.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">Support</a>}
+            <Link href="/#draws">{t("nav_draws")}</Link>
+            <Link href="/#how-it-works">{t("nav_how")}</Link>
+            <Link href="/winners">{t("nav_winners")}</Link>
+            <Link href="/#fairness">{t("nav_promise")}</Link>
+            <Link href="/terms">{t("foot_terms")}</Link>
+            <Link href="/privacy">{t("foot_privacy")}</Link>
+            <Link href="/download">{t("nav_app")}</Link>
+            {support && <a href={`https://wa.me/${support.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">{t("foot_support")}</a>}
           </div>
           <p className="footer-disclaimer">
-            18+ only · Participation does not guarantee a prize.<br />
-            © {new Date().getFullYear()} 1Rupya. Review each draw’s rules before purchasing tickets.
+            {t("foot_disclaimer")}<br />
+            © {new Date().getFullYear()} 1Rupya. {t("foot_rules")}
           </p>
         </footer>
         <Suspense fallback={null}>
           <FlashToast />
         </Suspense>
         <RegisterSW />
+        </I18nProvider>
       </body>
     </html>
   );

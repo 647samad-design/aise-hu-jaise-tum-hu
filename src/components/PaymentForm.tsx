@@ -7,6 +7,7 @@ import { submitPayment, type ActionResult } from "@/app/actions";
 import { CopyButton } from "@/components/ClientBits";
 import Icon from "@/components/Icon";
 import { Notice } from "@/components/auth/fields";
+import { useT } from "@/components/I18nProvider";
 import type { PaySettings } from "@/lib/settings";
 import { compressImage, sha256, uploadTo } from "@/lib/upload";
 import { pkr } from "@/lib/format";
@@ -22,6 +23,7 @@ const QUICK = [100, 200, 500, 1000];
 
 export default function PaymentForm({ userId, settings, draw }: Props) {
   const router = useRouter();
+  const t = useT();
   const [amount, setAmount] = useState(draw ? draw.qty * draw.price : Math.max(settings.minTopup, 100));
   const [method, setMethod] = useState(settings.easypaisa ? "easypaisa" : settings.jazzcash ? "jazzcash" : "bank");
   const [file, setFile] = useState<File | null>(null);
@@ -38,7 +40,7 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
 
   function pick(f: File | undefined) {
     if (!f) return;
-    if (!f.type.startsWith("image/")) return setErrors((e) => ({ ...e, file: "Please choose a screenshot image (JPG or PNG)." }));
+    if (!f.type.startsWith("image/")) return setErrors((e) => ({ ...e, file: t("pay_err_type") }));
     setFile(f);
     setErrors((e) => ({ ...e, file: "" }));
     setPreview((old) => {
@@ -50,20 +52,20 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!file) errs.file = "Upload the screenshot of your payment.";
-    if (sender.trim().length < 3) errs.sender = "Write the name on the account you paid from.";
-    if (!/^[0-9A-Za-z]{6,24}$/.test(trx.trim())) errs.trx = "Copy the Transaction ID (TID / TRX ID) from the SMS or receipt.";
-    if (!fixed && amount < settings.minTopup) errs.amount = `Minimum is ${pkr(settings.minTopup)}.`;
+    if (!file) errs.file = t("pay_err_file");
+    if (sender.trim().length < 3) errs.sender = t("pay_err_sender");
+    if (!/^[0-9A-Za-z]{6,24}$/.test(trx.trim())) errs.trx = t("pay_err_trx");
+    if (!fixed && amount < settings.minTopup) errs.amount = t("pay_err_min", { amount: pkr(settings.minTopup) });
     setErrors(errs);
     if (Object.values(errs).some(Boolean) || !file) return;
 
     setResult(null);
     try {
-      setBusy("Uploading screenshot…");
+      setBusy(t("pay_uploading"));
       const hash = await sha256(file);
       const small = await compressImage(file);
       const path = await uploadTo("payment-proofs", userId, small);
-      setBusy("Sending to admin…");
+      setBusy(t("pay_sending"));
       const r = await submitPayment({
         amount,
         trxId: trx.trim(),
@@ -77,7 +79,7 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
       setResult(r);
       if (r.ok) router.refresh();
     } catch (err) {
-      setResult({ ok: false, message: err instanceof Error ? err.message : "Upload failed. Please try again." });
+      setResult({ ok: false, message: err instanceof Error ? err.message : t("pay_err_upload") });
     } finally {
       setBusy(null);
     }
@@ -87,16 +89,16 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
     return (
       <div className="panel pay-done">
         <div className="mail-badge" aria-hidden="true"><Icon name="check" size={28} /></div>
-        <h2 className="panel-title">Payment sent for checking</h2>
-        <p>{result.message}</p>
+        <h2 className="panel-title">{t("pay_done_h")}</h2>
+        <p>{draw ? t("pay_done_join") : t("pay_done_wallet")}</p>
         <ol className="pay-timeline">
-          <li className="done"><span>1</span> Payment submitted</li>
-          <li className="now"><span>2</span> Admin verifies your screenshot</li>
-          <li><span>3</span> {draw ? "You're entered in the draw + email" : "Wallet credited + notification"}</li>
+          <li className="done"><span>1</span> {t("pay_step1")}</li>
+          <li className="now"><span>2</span> {t("pay_step2")}</li>
+          <li><span>3</span> {draw ? t("pay_step3_join") : t("pay_step3_wallet")}</li>
         </ol>
         <div className="flex flex-wrap justify-center gap-2">
-          <Link href={draw ? `/draws/${draw.id}` : "/wallet"} className="btn-primary">{draw ? "Back to the draw" : "View wallet"}</Link>
-          <Link href="/notifications" className="btn-ghost">Notifications</Link>
+          <Link href={draw ? `/draws/${draw.id}` : "/wallet"} className="btn-primary">{draw ? t("pay_back_draw") : t("pay_view_wallet")}</Link>
+          <Link href="/notifications" className="btn-ghost">{t("nav_notifications")}</Link>
         </div>
       </div>
     );
@@ -105,50 +107,52 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
   return (
     <form onSubmit={submit} className="panel space-y-6" id="add-money" noValidate>
       <div>
-        <h2 className="panel-title">{draw ? "Pay & join" : "Add money"}</h2>
+        <h2 className="panel-title">{draw ? t("pay_title_join") : t("pay_title_wallet")}</h2>
         {draw && (
           <p className="pay-summary">
-            <b>{draw.title}</b> · {draw.qty} ticket{draw.qty > 1 ? "s" : ""} × {pkr(draw.price)} = <b>{pkr(draw.qty * draw.price)}</b>
+            <b>{draw.title}</b>
+            <br />
+            {t("tickets_n", { n: draw.qty })} × {pkr(draw.price)} = <b>{pkr(draw.qty * draw.price)}</b>
           </p>
         )}
       </div>
 
       {/* Step 1: pay */}
       <section className="pay-step">
-        <h3><span>1</span> Send {fixed ? <b>{pkr(amount)}</b> : "the amount"}</h3>
+        <h3><span>1</span> {fixed ? t("pay_s1", { amount: pkr(amount) }) : t("pay_s1_any")}</h3>
         {settings.qrUrl && (
           <div className="qr-box">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={settings.qrUrl} alt={`Payment QR code for ${settings.accountName ?? "1Rupya"}`} width={220} height={220} />
+            <img src={settings.qrUrl} alt={t("pay_qr_alt")} width={220} height={220} />
             <div className="qr-text">
-              <p className="qr-title">Scan to pay</p>
-              <p>Scan with EasyPaisa, JazzCash or your bank app. Paying on this phone? Save the QR, then choose <b>Scan from gallery</b>.</p>
-              <a href={settings.qrUrl} download="1rupya-payment-qr" target="_blank" rel="noopener" className="btn-ghost !py-2">Save QR</a>
+              <p className="qr-title">{t("pay_scan")}</p>
+              <p>{t("pay_scan_p")}</p>
+              <a href={settings.qrUrl} download="1rupya-payment-qr" target="_blank" rel="noopener" className="btn-ghost !py-2">{t("pay_save_qr")}</a>
             </div>
           </div>
         )}
         {hasAccounts ? (
           <div className="pay-box">
-            {settings.accountName && <p className="pay-name">Account name: <b>{settings.accountName}</b></p>}
+            {settings.accountName && <p className="pay-name">{t("pay_acc_name")} <b>{settings.accountName}</b></p>}
             {settings.easypaisa && (
-              <div className="pay-line"><span className="pay-brand ep">EasyPaisa</span><b className="tabular-nums">{settings.easypaisa}</b><CopyButton value={settings.easypaisa} /></div>
+              <div className="pay-line"><span className="pay-brand ep">EasyPaisa</span><b className="tabular-nums" dir="ltr">{settings.easypaisa}</b><CopyButton value={settings.easypaisa} /></div>
             )}
             {settings.jazzcash && (
-              <div className="pay-line"><span className="pay-brand jc">JazzCash</span><b className="tabular-nums">{settings.jazzcash}</b><CopyButton value={settings.jazzcash} /></div>
+              <div className="pay-line"><span className="pay-brand jc">JazzCash</span><b className="tabular-nums" dir="ltr">{settings.jazzcash}</b><CopyButton value={settings.jazzcash} /></div>
             )}
             {settings.bank && (
-              <div className="pay-line"><span className="pay-brand bk">Bank</span><b className="whitespace-pre-line text-sm">{settings.bank}</b><CopyButton value={settings.bank} /></div>
+              <div className="pay-line"><span className="pay-brand bk">{t("pay_bank")}</span><b className="whitespace-pre-line text-sm">{settings.bank}</b><CopyButton value={settings.bank} /></div>
             )}
           </div>
         ) : (
-          !settings.qrUrl && <Notice tone="info">Payment details are being set up. Please check back shortly.</Notice>
+          !settings.qrUrl && <Notice tone="info">{t("pay_setup")}</Notice>
         )}
-        {fixed && <div><CopyButton value={String(amount)} label={`Copy amount (${amount})`} /></div>}
+        {fixed && <div><CopyButton value={String(amount)} label={t("pay_copy_amount", { n: amount })} /></div>}
       </section>
 
       {/* Step 2: proof */}
       <section className="pay-step">
-        <h3><span>2</span> Upload your payment screenshot</h3>
+        <h3><span>2</span> {t("pay_s2")}</h3>
         <input ref={input} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
         <button
           type="button"
@@ -163,14 +167,14 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
           {preview ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={preview} alt="Your payment screenshot" />
-              <span className="drop-change">Change screenshot</span>
+              <img src={preview} alt={t("pay_shot_alt")} />
+              <span className="drop-change">{t("pay_change")}</span>
             </>
           ) : (
             <span className="drop-empty">
               <Icon name="plus" size={26} />
-              <b>Tap to upload screenshot</b>
-              <small>The confirmation screen from EasyPaisa / JazzCash / your bank, showing amount and TID.</small>
+              <b>{t("pay_tap_upload")}</b>
+              <small>{t("pay_upload_hint")}</small>
             </span>
           )}
         </button>
@@ -179,10 +183,10 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
 
       {/* Step 3: details */}
       <section className="pay-step">
-        <h3><span>3</span> Payment details</h3>
+        <h3><span>3</span> {t("pay_s3")}</h3>
         {!fixed && (
           <div className="field">
-            <label htmlFor="amount">Amount you sent (PKR)</label>
+            <label htmlFor="amount">{t("pay_amount")}</label>
             <div className={`field-box ${errors.amount ? "has-error" : ""}`}>
               <input id="amount" type="number" inputMode="numeric" min={settings.minTopup} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
             </div>
@@ -195,35 +199,35 @@ export default function PaymentForm({ userId, settings, draw }: Props) {
           </div>
         )}
         <div className="field">
-          <label htmlFor="method">Paid with</label>
+          <label htmlFor="method">{t("pay_with")}</label>
           <div className="seg seg-3" role="radiogroup">
-            {[["easypaisa", "EasyPaisa"], ["jazzcash", "JazzCash"], ["bank", "Bank / Raast"]].map(([v, l]) => (
+            {[["easypaisa", "EasyPaisa"], ["jazzcash", "JazzCash"], ["bank", t("pay_bank_raast")]].map(([v, l]) => (
               <button key={v} type="button" role="radio" aria-checked={method === v} onClick={() => setMethod(v)}>{l}</button>
             ))}
           </div>
         </div>
         <div className="field">
-          <label htmlFor="sender">Name on the account you paid from</label>
+          <label htmlFor="sender">{t("pay_sender")}</label>
           <div className={`field-box ${errors.sender ? "has-error" : ""}`}>
             <Icon name="user" size={18} className="field-icon" />
-            <input id="sender" value={sender} onChange={(e) => setSender(e.target.value)} placeholder="e.g. Muhammad Ali" autoComplete="name" />
+            <input id="sender" value={sender} onChange={(e) => setSender(e.target.value)} placeholder={t("pay_sender_ph")} autoComplete="name" />
           </div>
-          {errors.sender ? <p className="field-error">{errors.sender}</p> : <p className="field-hint">Exactly as it appears on the payment, so we can match it quickly.</p>}
+          {errors.sender ? <p className="field-error">{errors.sender}</p> : <p className="field-hint">{t("pay_sender_hint")}</p>}
         </div>
         <div className="field">
-          <label htmlFor="trx">Transaction ID (TID)</label>
+          <label htmlFor="trx">{t("pay_trx")}</label>
           <div className={`field-box ${errors.trx ? "has-error" : ""}`}>
-            <input id="trx" value={trx} onChange={(e) => setTrx(e.target.value.replace(/\s/g, ""))} placeholder="e.g. 48210933571" autoComplete="off" autoCapitalize="characters" inputMode="text" />
+            <input id="trx" value={trx} onChange={(e) => setTrx(e.target.value.replace(/\s/g, ""))} placeholder={t("pay_trx_ph")} dir="ltr" autoComplete="off" autoCapitalize="characters" inputMode="text" />
           </div>
-          {errors.trx ? <p className="field-error">{errors.trx}</p> : <p className="field-hint">It&apos;s in the SMS and on the screenshot. Each ID can be used once — this protects you from fake claims.</p>}
+          {errors.trx ? <p className="field-error">{errors.trx}</p> : <p className="field-hint">{t("pay_trx_hint")}</p>}
         </div>
       </section>
 
       {result && !result.ok && <Notice tone="error">{result.message}</Notice>}
       <button type="submit" className="btn-gold w-full auth-submit" disabled={!!busy}>
-        {busy ? <><span className="spinner dark" aria-hidden="true" /> {busy}</> : draw ? `Submit payment & join (${pkr(amount)})` : `Submit payment (${pkr(amount)})`}
+        {busy ? <><span className="spinner dark" aria-hidden="true" /> {busy}</> : draw ? t("pay_submit_join", { amount: pkr(amount) }) : t("pay_submit", { amount: pkr(amount) })}
       </button>
-      <p className="text-center text-xs text-pine-900/60">Every payment is checked by a person. You get a notification and an email as soon as it is confirmed.</p>
+      <p className="text-center text-xs text-pine-900/60">{t("pay_footer")}</p>
     </form>
   );
 }

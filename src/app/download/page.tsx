@@ -3,6 +3,8 @@ import QRCode from "qrcode";
 import Icon from "@/components/Icon";
 import InstallPanel from "@/components/InstallPanel";
 import { SITE_URL } from "@/lib/site";
+import { getT } from "@/lib/i18n/server";
+import type { Key } from "@/lib/i18n/messages";
 
 export const metadata: Metadata = {
   title: "Download the 1Rupya app for Android & iPhone",
@@ -13,20 +15,18 @@ export const metadata: Metadata = {
 export default async function DownloadPage() {
   const qr = await QRCode.toString(`${SITE_URL}/download`, { type: "svg", margin: 1, color: { dark: "#103f34", light: "#ffffff" } });
   const apk = process.env.NEXT_PUBLIC_ANDROID_APK_URL;
+  const t = await getT();
 
   return (
     <div className="page">
       <section className="dl-hero">
         <div className="dl-copy">
-          <p className="eyebrow"><span className="status-dot" /> GET THE APP</p>
-          <h1>1Rupya, right on your <em>home screen.</em></h1>
-          <p className="dl-lead">
-            Opens like an app, loads fast, and shows your tickets, wallet and draw updates in one tap. Free, about 1&nbsp;MB, and no
-            Play Store needed.
-          </p>
+          <p className="eyebrow"><span className="status-dot" /> {t("dl_eyebrow")}</p>
+          <h1>{t("dl_h1a")}<em>{t("dl_h1b")}</em></h1>
+          <p className="dl-lead">{t("dl_lead")}</p>
           <InstallPanel apkUrl={apk} />
         </div>
-        <div className="dl-phone" aria-hidden="true">
+        <div className="dl-phone" aria-hidden="true" dir="ltr">
           <div className="phone">
             <div className="phone-notch" />
             <div className="phone-screen">
@@ -41,38 +41,38 @@ export default async function DownloadPage() {
 
       <section className="dl-steps">
         <div className="panel">
-          <h2 className="panel-title"><Icon name="android" size={20} className="inline -mt-1 mr-1" /> Android</h2>
+          <h2 className="panel-title"><Icon name="android" size={20} className="inline -mt-1 me-1" /> {t("dl_android")}</h2>
           <ol>
-            <li>Open this site in <b>Chrome</b>.</li>
-            <li>Tap <b>Install app</b> above — or Chrome&apos;s <b>⋮</b> menu → <b>Install app</b> / <b>Add to Home screen</b>.</li>
-            <li>Tap <b>Install</b>. 1Rupya appears with your other apps.</li>
+            <li>{t("dl_a1")}</li>
+            <li>{t("dl_a2")}</li>
+            <li>{t("dl_a3")}</li>
           </ol>
         </div>
         <div className="panel">
-          <h2 className="panel-title"> iPhone</h2>
+          <h2 className="panel-title"> {t("dl_iphone")}</h2>
           <ol>
-            <li>Open this site in <b>Safari</b>.</li>
-            <li>Tap the <b>Share</b> button (square with an arrow).</li>
-            <li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+            <li>{t("dl_i1")}</li>
+            <li>{t("dl_i2")}</li>
+            <li>{t("dl_i3")}</li>
           </ol>
         </div>
         <div className="panel dl-qr">
-          <h2 className="panel-title">On a computer?</h2>
-          <p className="panel-sub">Scan with your phone camera to open this page there.</p>
+          <h2 className="panel-title">{t("dl_pc")}</h2>
+          <p className="panel-sub">{t("dl_pc_p")}</p>
           <div className="qr-svg" dangerouslySetInnerHTML={{ __html: qr }} />
         </div>
       </section>
 
       <section className="dl-why">
-        {[
-          ["bell", "Draw alerts", "See the moment your draw sells out, when the winner is picked, and when the next lucky draw opens."],
-          ["ticket", "Your tickets, one tap", "No typing the address or hunting for a bookmark."],
-          ["shield", "Safe and light", "Needs no special permissions. It is the same secure site, installed by your browser, and always up to date."],
-        ].map(([icon, h, p]) => (
+        {([
+          ["bell", "dl_w1t", "dl_w1p"],
+          ["ticket", "dl_w2t", "dl_w2p"],
+          ["shield", "dl_w3t", "dl_w3p"],
+        ] as [string, Key, Key][]).map(([icon, h, p]) => (
           <div key={h}>
             <Icon name={icon as "bell" | "ticket" | "shield"} />
-            <h3>{h}</h3>
-            <p>{p}</p>
+            <h3>{t(h)}</h3>
+            <p>{t(p)}</p>
           </div>
         ))}
       </section>

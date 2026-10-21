@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/validation";
 import { emailConfigured, layout, sendEmails, type Mail } from "@/lib/email";
 
-export type ActionResult = { ok: boolean; message?: string };
+export type ActionResult = { ok: boolean; message?: string; data?: Record<string, string | number> };
 
 function fail(error: { message: string } | null): ActionResult {
   // Postgres "raise exception" text is already written for humans.
@@ -77,6 +77,7 @@ export async function buyTickets(drawId: string, qty: number): Promise<ActionRes
   const r = data as { first: number; last: number; cost: number };
   return {
     ok: true,
+    data: { first: r.first, last: r.last },
     message:
       r.first === r.last
         ? `Ticket #${r.first} is yours. Good luck!`

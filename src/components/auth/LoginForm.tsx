@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import { resendConfirmation, sendMagicLink, signInWithPassword, type AuthState } from "@/app/auth/actions";
-import { Divider } from "@/components/auth/AuthShell";
+import { Divider } from "@/components/auth/Divider";
 import GoogleButton from "@/components/auth/GoogleButton";
 import { Field, Notice, PasswordField, SubmitButton } from "@/components/auth/fields";
+import { useT } from "@/components/I18nProvider";
 
 type Banner = { tone: "error" | "success" | "info"; text: string } | null;
 
 export default function LoginForm({ next, banner }: { next: string; banner: Banner }) {
+  const t = useT();
   const [mode, setMode] = useState<"password" | "link">("password");
   const [pwState, pwAction] = useActionState<AuthState | null, FormData>(signInWithPassword, null);
   const [linkState, linkAction] = useActionState<AuthState | null, FormData>(sendMagicLink, null);
@@ -23,10 +25,10 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
     return (
       <div className="space-y-4">
         <Notice tone="success">
-          <b>Check your inbox.</b> {linkState.message} The link works once and expires in an hour.
+          {t("li_link_sent")}
         </Notice>
         <button type="button" className="btn-ghost w-full" onClick={() => setMode("password")}>
-          Sign in with password instead
+          {t("li_use_pw")}
         </button>
       </div>
     );
@@ -37,14 +39,14 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
       {banner && !state && <Notice tone={banner.tone}>{banner.text}</Notice>}
 
       <GoogleButton next={next} />
-      <Divider>or with email</Divider>
+      <Divider>{t("au_or_email")}</Divider>
 
-      <div className="seg" role="tablist" aria-label="Sign-in method">
+      <div className="seg" role="tablist" aria-label={t("li_method")}>
         <button type="button" role="tab" aria-selected={mode === "password"} onClick={() => setMode("password")}>
-          Password
+          {t("li_tab_pw")}
         </button>
         <button type="button" role="tab" aria-selected={mode === "link"} onClick={() => setMode("link")}>
-          Email link
+          {t("li_tab_link")}
         </button>
       </div>
 
@@ -58,7 +60,7 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
               disabled={resending}
               onClick={() => startResend(async () => setResent(await resendConfirmation(state.email!)))}
             >
-              {resending ? "Sending…" : "Resend confirmation email"}
+              {resending ? t("li_resending") : t("li_resend")}
             </button>
           )}
         </Notice>
@@ -70,7 +72,7 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
           <input type="hidden" name="next" value={next} />
           <Field
             name="email"
-            label="Email"
+            label={t("su_email")}
             type="email"
             icon="mail"
             autoComplete="email"
@@ -78,21 +80,22 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
             required
             defaultValue={email}
             placeholder="you@example.com"
+            dir="ltr"
             error={pwState?.fields?.email}
             autoFocus
           />
           <PasswordField
             error={pwState?.fields?.password}
-            aside={<Link href="/forgot-password" className="auth-link small">Forgot password?</Link>}
+            aside={<Link href="/forgot-password" className="auth-link small">{t("li_forgot")}</Link>}
           />
-          <SubmitButton pendingText="Signing in…">Sign in</SubmitButton>
+          <SubmitButton pendingText={t("li_signing")}>{t("li_submit")}</SubmitButton>
         </form>
       ) : (
         <form key={`ml-${linkState?.message ?? ""}`} action={linkAction} className="space-y-4" noValidate>
           <input type="hidden" name="next" value={next} />
           <Field
             name="email"
-            label="Email"
+            label={t("su_email")}
             type="email"
             icon="mail"
             autoComplete="email"
@@ -100,10 +103,11 @@ export default function LoginForm({ next, banner }: { next: string; banner: Bann
             required
             defaultValue={linkState?.values?.email ?? ""}
             placeholder="you@example.com"
+            dir="ltr"
             error={linkState?.fields?.email}
-            hint="We'll email you a one-time link. No password needed."
+            hint={t("li_link_hint")}
           />
-          <SubmitButton pendingText="Sending link…">Email me a sign-in link</SubmitButton>
+          <SubmitButton pendingText={t("li_link_sending")}>{t("li_link_submit")}</SubmitButton>
         </form>
       )}
     </div>

@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import Icon from "@/components/Icon";
 import ProgressBar from "@/components/ProgressBar";
 import { getSessionProfile } from "@/lib/auth";
-import { pkr, shortDate, type Draw } from "@/lib/format";
+import { pkr, type Draw } from "@/lib/format";
+import type { Key } from "@/lib/i18n/messages";
+import { getT } from "@/lib/i18n/server";
+import { dateText } from "@/lib/i18n/time";
 
 export const metadata: Metadata = { title: "My tickets · 1Rupya", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -16,11 +19,11 @@ type Row = {
 };
 
 const FILTERS = [
-  ["all", "All"],
-  ["active", "Active"],
-  ["won", "Won"],
-  ["finished", "Finished"],
-] as const;
+  ["all", "mt_f_all"],
+  ["active", "mt_f_active"],
+  ["won", "mt_f_won"],
+  ["finished", "mt_f_done"],
+] as const satisfies readonly (readonly [string, Key])[];
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   const { f = "all" } = await searchParams;
@@ -63,25 +66,26 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   const totalTickets = all.reduce((s, g) => s + g.numbers.length, 0);
   const totalSpent = all.filter((g) => g.draw.status !== "cancelled").reduce((s, g) => s + g.numbers.length * g.draw.ticket_price, 0);
 
+  const t = await getT();
   return (
     <div className="page">
       <header className="page-head">
-        <p className="eyebrow">YOUR ENTRIES</p>
-        <h1>My <em>tickets</em></h1>
-        <p>Every ticket you hold, in one place. Results appear here as soon as a draw is completed.</p>
+        <p className="eyebrow">{t("mt_eyebrow")}</p>
+        <h1>{t("mt_h1")}</h1>
+        <p>{t("mt_p")}</p>
       </header>
 
       <div className="stat-row">
-        <div className="stat"><span>Draws entered</span><strong>{all.length}</strong></div>
-        <div className="stat"><span>Tickets held</span><strong>{totalTickets}</strong></div>
-        <div className="stat"><span>Spent</span><strong>{pkr(totalSpent)}</strong></div>
-        <div className="stat gold"><span>Wins</span><strong>{counts.won}</strong></div>
+        <div className="stat"><span>{t("mt_entered")}</span><strong>{all.length}</strong></div>
+        <div className="stat"><span>{t("mt_held")}</span><strong>{totalTickets}</strong></div>
+        <div className="stat"><span>{t("mt_spent")}</span><strong dir="ltr">{pkr(totalSpent)}</strong></div>
+        <div className="stat gold"><span>{t("mt_wins")}</span><strong>{counts.won}</strong></div>
       </div>
 
-      <div className="chips" role="tablist" aria-label="Filter tickets">
+      <div className="chips" role="tablist" aria-label={t("mt_h1")}>
         {FILTERS.map(([key, label]) => (
           <Link key={key} href={key === "all" ? "/tickets" : `/tickets?f=${key}`} role="tab" aria-selected={f === key} className="chip">
-            {label} <span>{counts[key]}</span>
+            {t(label)} <span>{counts[key]}</span>
           </Link>
         ))}
       </div>
@@ -89,9 +93,9 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
       {list.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon"><Icon name="ticket" /></div>
-          <h3>{all.length ? "Nothing in this filter" : "No tickets yet"}</h3>
-          <p>{all.length ? "Try another filter." : "Pick an open draw to get your first ticket. Tickets start from PKR 1."}</p>
-          <Link href="/#draws" className="btn-primary">Explore draws <Icon name="arrow" size={18} /></Link>
+          <h3>{all.length ? t("mt_empty_filter_h") : t("mt_none_h")}</h3>
+          <p>{all.length ? t("mt_empty_filter_p") : t("mt_none_p")}</p>
+          <Link href="/#draws" className="btn-primary">{t("mt_explore")} <Icon name="arrow" size={18} className="flip-rtl" /></Link>
         </div>
       ) : (
         <ul className="ticket-list">
@@ -107,28 +111,28 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
               </Link>
               <div className="ticket-main">
                 <div className="ticket-title">
-                  <Link href={`/draws/${draw.id}`}>{draw.title}</Link>
-                  <StatusPill status={draw.status} won={won} />
+                  <Link href={`/draws/${draw.id}`} dir="auto">{draw.title}</Link>
+                  <StatusPill status={draw.status} won={won} t={t} />
                 </div>
                 <p className="ticket-meta">
-                  {numbers.length} ticket{numbers.length > 1 ? "s" : ""} · {pkr(numbers.length * draw.ticket_price)} · since {shortDate(first)}
+                  {t("mt_meta", { n: numbers.length, amount: pkr(numbers.length * draw.ticket_price), date: dateText(t.lang, first) })}
                 </p>
                 {(draw.status === "open" || draw.status === "full") && (
                   <ProgressBar sold={draw.sold_tickets} target={draw.target_tickets} />
                 )}
                 {draw.status === "drawn" && (
                   <p className="ticket-result">
-                    Winning ticket <b>#{draw.winner_ticket}</b>
-                    {won ? " — that's yours! We'll contact you on your registered number." : ""}{" "}
-                    <Link href={`/verify/${draw.id}`} className="auth-link">Verify</Link>
+                    <b>{t("mt_win_line", { n: draw.winner_ticket ?? "" })}</b>
+                    {won ? t("mt_yours") : ""}{" "}
+                    <Link href={`/verify/${draw.id}`} className="auth-link">{t("mt_verify")}</Link>
                   </p>
                 )}
-                {draw.status === "cancelled" && <p className="ticket-result">Cancelled — {pkr(numbers.length * draw.ticket_price)} refunded to your wallet.</p>}
-                <div className="ticket-numbers">
+                {draw.status === "cancelled" && <p className="ticket-result">{t("mt_refunded", { amount: pkr(numbers.length * draw.ticket_price) })}</p>}
+                <div className="ticket-numbers" dir="ltr">
                   {numbers.slice(0, 40).map((n) => (
                     <span key={n} className={n === draw.winner_ticket ? "win" : ""}>#{n}</span>
                   ))}
-                  {numbers.length > 40 && <span className="more">+{numbers.length - 40} more</span>}
+                  {numbers.length > 40 && <span className="more">{t("mt_more", { n: numbers.length - 40 })}</span>}
                 </div>
               </div>
             </li>
@@ -139,9 +143,9 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
   );
 }
 
-function StatusPill({ status, won }: { status: Draw["status"]; won: boolean }) {
-  if (won) return <span className="pill pill-gold">You won</span>;
-  const map = { open: ["Live", "pill-green"], full: ["Sold out · drawing soon", "pill-amber"], drawn: ["Completed", "pill-muted"], cancelled: ["Refunded", "pill-red"] } as const;
+function StatusPill({ status, won, t }: { status: Draw["status"]; won: boolean; t: Awaited<ReturnType<typeof getT>> }) {
+  if (won) return <span className="pill pill-gold">{t("pill_won")}</span>;
+  const map = { open: ["pill_live", "pill-green"], full: ["pill_full", "pill-amber"], drawn: ["pill_done", "pill-muted"], cancelled: ["pill_refunded", "pill-red"] } as const;
   const [label, cls] = map[status];
-  return <span className={`pill ${cls}`}>{label}</span>;
+  return <span className={`pill ${cls}`}>{t(label)}</span>;
 }

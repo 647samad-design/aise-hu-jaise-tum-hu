@@ -21,8 +21,8 @@
   --tabs-h: 64px;
 }
 
-.skip-link { position: absolute; left: -9999px; top: 8px; z-index: 100; background: var(--forest); color: #fff; padding: 10px 14px; border-radius: 8px; }
-.skip-link:focus { left: 12px; }
+.skip-link { position: absolute; inset-inline-start: 12px; top: -80px; z-index: 100; background: var(--forest); color: #fff; padding: 10px 14px; border-radius: 8px; }
+.skip-link:focus { top: 8px; }
 
 /* ------------------------------------------------------------ header */
 .nav-links a { position: relative; padding: 6px 0; }
@@ -33,7 +33,7 @@
 .nav-signin:hover { background: #193b260d; }
 .nav-cta { font-size: 13px; font-weight: 700; background: var(--forest); color: #faf8ed; padding: 11px 18px; border-radius: 8px; transition: background .2s, transform .2s; }
 .nav-cta:hover { background: #1d523f; transform: translateY(-1px); }
-.wallet-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--forest); background: #e8cf9455; border: 1px solid #d4b36b66; padding: 9px 14px; border-radius: 999px; font-variant-numeric: tabular-nums; transition: background .2s; }
+.wallet-chip { white-space: nowrap; line-height: 1.2 !important; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--forest); background: #e8cf9455; border: 1px solid #d4b36b66; padding: 9px 14px; border-radius: 999px; font-variant-numeric: tabular-nums; transition: background .2s; }
 .wallet-chip:hover { background: #e8cf9488; }
 
 .user-menu { position: relative; }
@@ -472,4 +472,132 @@
   .pay-dl { grid-template-columns: 1fr; }
   .crowd li { grid-template-columns: 32px 1fr auto; }
   .crowd-time { display: none; }
+}
+
+/* ================================================================ simple & bilingual layer */
+.lang-toggle { font-size: 13px; font-weight: 700; color: var(--forest); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: #fff; line-height: 1; }
+.lang-toggle:lang(ur), .lang-toggle[lang="ur"] { font-family: "Noto Nastaliq Urdu", serif; font-size: 14px; padding: 6px 14px 10px; }
+.lang-toggle:hover { border-color: #3d7a5f; }
+
+.progress { height: 12px; width: 100%; overflow: hidden; border-radius: 999px; background: #e2e9df; }
+.progress > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #3d7a5f, #e8cf94); transition: width .4s; }
+[dir="rtl"] .progress > div { background: linear-gradient(270deg, #3d7a5f, #e8cf94); margin-inline-start: 0; }
+
+.card-badge { position: absolute; top: 12px; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; background: #0f2a22cc; color: var(--champagne-2); }
+.card-badge.start { inset-inline-start: 12px; }
+.card-badge.end { inset-inline-end: 12px; }
+.card-badge.dark { background: var(--forest); }
+.card-badge.gold { background: var(--champagne); color: var(--forest); }
+.card-cta { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; padding: 12px; border-radius: 10px; background: var(--forest); color: #faf8ed; font-weight: 700; font-size: 15px; transition: background .2s; }
+.draw-card:hover .card-cta { background: #1d523f; }
+
+.big-btn { padding-top: 16px !important; padding-bottom: 16px !important; font-size: 16px !important; border-radius: 12px !important; }
+.hero-btn { padding: 16px 26px !important; font-size: 16px !important; border-radius: 10px !important; }
+.buy-label { font-weight: 700; color: var(--text); font-size: 15px; }
+
+.confidence-strip.simple { grid-template-columns: repeat(4, 1fr); }
+.confidence-strip.simple > span { font-size: 13px; font-weight: 600; }
+
+.how-simple { padding: 70px 0 30px; text-align: center; }
+.how-simple h2 { font-family: Georgia, serif; font-size: 36px; color: var(--text); margin-top: 10px; }
+.how-simple .eyebrow { justify-content: center; }
+.how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 30px; text-align: start; }
+.how-grid li { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px 20px; display: grid; gap: 10px; align-content: start; }
+.how-grid li > svg { color: var(--bronze); }
+.how-num { position: absolute; top: 16px; inset-inline-end: 16px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--forest); color: var(--champagne); font-weight: 800; font-size: 14px; }
+.how-grid h3 { font-size: 17px; font-weight: 800; color: var(--text); }
+.how-grid p { font-size: 14px; line-height: 1.7; color: #4f6457; }
+.how-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px; }
+
+/* readable sizes for everyone (the home design used very small text) */
+.eyebrow { font-size: 11px; }
+.hero-description { font-size: 16px; max-width: 460px; }
+.hero-note { font-size: 12px; }
+.confidence-strip > span { font-size: 13px; }
+.draw-disclaimer { font-size: 12px; }
+.fairness-panel > div > p:not(.eyebrow) { font-size: 14px; }
+.fairness-details p { font-size: 13px; }
+.faq-section summary { font-size: 15px; font-weight: 600; }
+.faq-section details p { font-size: 14px; }
+.footer-links { font-size: 12px; }
+.site-footer > div > p, .footer-disclaimer { font-size: 11px; }
+.nav-links { font-size: 14px; }
+
+/* direction helpers */
+[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+.text-end { text-align: end; }
+
+/* ---------------------------------------------------------------- right-to-left (Urdu) */
+[dir="rtl"] .nav-links { margin-left: 0; margin-right: 48px; }
+[dir="rtl"] .nav-account { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .hero-copy { padding: 64px 52px 56px 0; }
+[dir="rtl"] .proof-float { right: auto; left: 28px; transform: rotate(-3deg); }
+[dir="rtl"] .draw-empty .btn-ghost { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .step > svg { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .fairness-details { border-left: 0; padding-left: 0; border-right: 1px solid #f5e7c02b; padding-right: 40px; }
+[dir="rtl"] .menu { right: auto; left: 0; }
+[dir="rtl"] .faq-section details p { padding: 0 0 20px 24px; }
+[dir="rtl"] .legal section p { margin: 10px 34px 0 0; }
+[dir="rtl"] .avatar-dot { right: auto; left: -1px; }
+[dir="rtl"] .bell-count { right: auto; left: 2px; }
+[dir="rtl"] .notif-dot { right: auto; left: 18px; }
+[dir="rtl"] .field-toggle { border-radius: 10px 0 0 10px; }
+[dir="rtl"] .field-icon { margin-left: 0; margin-right: 14px; }
+[dir="rtl"] .field-icon + input { padding-left: 14px; padding-right: 10px; }
+[dir="rtl"] .gallery-count { right: auto; left: 12px; }
+[dir="rtl"] .toast button { margin-right: 4px; }
+input[dir="ltr"] { text-align: left; }
+[dir="rtl"] input[dir="ltr"]::placeholder { text-align: right; }
+
+/* ---------------------------------------------------------------- Urdu typography */
+:lang(ur) body, html[lang="ur"] body { font-family: "Noto Nastaliq Urdu", Manrope, system-ui, sans-serif; }
+html[lang="ur"] * { letter-spacing: 0 !important; }
+html[lang="ur"] body { line-height: 2; }
+html[lang="ur"] h1, html[lang="ur"] h2, html[lang="ur"] h3, html[lang="ur"] .font-display, html[lang="ur"] .panel-title, html[lang="ur"] .auth-title,
+html[lang="ur"] .page-head h1, html[lang="ur"] .hero-copy h1, html[lang="ur"] .home h2, html[lang="ur"] .status-page h1, html[lang="ur"] .opens-when,
+html[lang="ur"] .account-name, html[lang="ur"] .qr-title, html[lang="ur"] .how-simple h2 {
+  font-family: "Noto Nastaliq Urdu", Georgia, serif;
+  line-height: 1.9;
+  font-weight: 600;
+}
+html[lang="ur"] .hero-copy h1 { font-size: clamp(34px, 3.6vw, 50px); }
+html[lang="ur"] .page-head h1 { font-size: clamp(30px, 3.6vw, 42px); }
+html[lang="ur"] .home h2 { font-size: 30px; }
+html[lang="ur"] em { font-style: normal; }
+html[lang="ur"] .eyebrow { font-size: 13px; font-weight: 600; }
+html[lang="ur"] .btn, html[lang="ur"] .btn-gold, html[lang="ur"] .btn-primary, html[lang="ur"] .btn-ghost, html[lang="ur"] .card-cta, html[lang="ur"] .nav-cta, html[lang="ur"] .chip {
+  line-height: 1.9;
+  padding-top: 8px;
+  padding-bottom: 12px;
+}
+html[lang="ur"] .field label, html[lang="ur"] .buy-label { font-size: 15px; }
+html[lang="ur"] .field-hint, html[lang="ur"] .field-error { font-size: 13px; line-height: 1.9; }
+html[lang="ur"] .bottom-tabs a { font-size: 12px; line-height: 1.6; }
+html[lang="ur"] code, html[lang="ur"] input, html[lang="ur"] .tabular-nums, html[lang="ur"] [dir="ltr"] { font-family: Manrope, system-ui, sans-serif; line-height: 1.5; }
+html[lang="ur"] .nav-links { font-size: 15px; }
+
+@media (max-width: 1000px) {
+  .how-grid { grid-template-columns: 1fr 1fr; }
+  [dir="rtl"] .hero-copy { padding-right: 30px; }
+}
+@media (max-width: 700px) {
+  .confidence-strip.simple { grid-template-columns: 1fr 1fr; }
+  .how-grid { grid-template-columns: 1fr; }
+  .how-simple { padding-top: 48px; }
+  [dir="rtl"] .hero-copy { padding: 36px 26px 10px; }
+  [dir="rtl"] .fairness-details { border-right: 0; padding-right: 0; }
+  .lang-toggle { padding: 7px 10px; font-size: 12px; }
+  html[lang="ur"] .hero-copy h1 { font-size: 34px; }
+}
+
+/* crowded phone header (language + bell + wallet + avatar) */
+@media (max-width: 420px) {
+  .nav-inner { gap: 6px; padding-inline: 12px; }
+  .nav-account { gap: 4px; }
+  .brand-name { font-size: 20px; }
+  .brand-mark { width: 30px; height: 34px; font-size: 24px; }
+  .lang-toggle { padding: 6px 8px; font-size: 11px; }
+  .wallet-chip { padding: 7px 9px; font-size: 11px; }
+  .bell { width: 32px; height: 32px; }
+  .avatar { width: 36px; height: 36px; }
 }

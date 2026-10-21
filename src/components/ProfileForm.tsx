@@ -3,25 +3,27 @@
 import { useActionState } from "react";
 import { saveProfile, type ActionResult } from "@/app/actions";
 import { Field, Notice, SubmitButton } from "@/components/auth/fields";
+import { useT } from "@/components/I18nProvider";
 
 export default function ProfileForm({ fullName, phone, next }: { fullName: string; phone: string; next?: string }) {
   const [state, action] = useActionState<ActionResult | null, FormData>(saveProfile, null);
+  const t = useT();
 
   return (
     <form action={action} className="space-y-4">
       {next && <input type="hidden" name="next" value={next} />}
       <Field
         name="full_name"
-        label="Full name"
+        label={t("pf_name")}
         icon="user"
         autoComplete="name"
         required
         defaultValue={fullName}
-        hint="Use the same name as your EasyPaisa / JazzCash account so we can match your payments."
+        hint={t("pf_name_hint")}
       />
       <Field
         name="phone"
-        label="Mobile number"
+        label={t("pf_phone")}
         icon="phone"
         type="tel"
         autoComplete="tel"
@@ -29,10 +31,11 @@ export default function ProfileForm({ fullName, phone, next }: { fullName: strin
         required
         defaultValue={phone}
         placeholder="03001234567"
-        hint="Winners are contacted on this number. It is never shown publicly."
+        hint={t("pf_phone_hint")}
+        dir="ltr"
       />
-      {state && <Notice tone={state.ok ? "success" : "error"}>{state.message}</Notice>}
-      <SubmitButton pendingText="Saving…">{next ? "Save and continue" : "Save changes"}</SubmitButton>
+      {state && <Notice tone={state.ok ? "success" : "error"}>{state.ok ? t("pf_saved") : state.message}</Notice>}
+      <SubmitButton pendingText={t("pf_saving")}>{next ? t("pf_save_continue") : t("pf_save")}</SubmitButton>
     </form>
   );
 }

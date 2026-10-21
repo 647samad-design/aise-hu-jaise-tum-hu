@@ -1,3 +1,5 @@
+import type { Key } from "@/lib/i18n/messages";
+
 // Shared validation used by both the browser forms (instant feedback) and the server actions (the real check).
 
 export const PHONE_RE = /^(03[0-9]{9}|\+923[0-9]{9})$/;
@@ -38,6 +40,21 @@ export function safeNext(raw: unknown, fallback = "/"): string {
   const v = typeof raw === "string" ? raw : "";
   if (!v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\")) return fallback;
   return v;
+}
+
+/** Maps Supabase auth error text to a translation key (see lib/i18n/messages). */
+export function authErrorKey(message: string | undefined): Key {
+  const m = (message ?? "").toLowerCase();
+  if (m.includes("is not valid json") || m.includes("unexpected token '<'") || m.includes("<!doctype")) return "e_setup";
+  if (m.includes("fetch failed") || m.includes("failed to fetch") || m.includes("enotfound")) return "e_network";
+  if (m.includes("invalid login credentials")) return "e_bad_login";
+  if (m.includes("email not confirmed")) return "e_unconfirmed";
+  if (m.includes("already registered") || m.includes("already been registered")) return "e_exists";
+  if (m.includes("rate limit") || m.includes("too many")) return "e_rate";
+  if (m.includes("same_password") || m.includes("different from the old")) return "e_same_pw";
+  if (m.includes("weak") || m.includes("password should")) return "e_weak";
+  if (m.includes("expired") || (m.includes("invalid") && m.includes("token"))) return "e_expired";
+  return "e_generic";
 }
 
 /** Turns Supabase auth error text into something a player understands. */
