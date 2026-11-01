@@ -1,4 +1,4 @@
-"""Top 20 Lucky Draw - FastAPI backend (single file, easy to deploy)."""
+"""JeetoPrizes - FastAPI backend (single file, easy to deploy)."""
 import os, hmac, hashlib, secrets, json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -255,7 +255,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Top 20 Lucky Draw", lifespan=lifespan)
+app = FastAPI(title="JeetoPrizes", lifespan=lifespan)
 
 
 class RegisterIn(BaseModel):

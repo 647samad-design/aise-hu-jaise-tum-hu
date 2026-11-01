@@ -1,4 +1,4 @@
-# 🏆 Top 20 Lucky Draw
+# 🏆 JeetoPrizes
 
 FastAPI + installable PWA (works in browser and can be installed as an app on Android/iOS).
 
