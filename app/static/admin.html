@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin · Top 20 Lucky Draw</title>
+<style>
+:root{--bg:#0b1020;--card:#141b34;--line:#27325e;--tx:#eef1ff;--mut:#8b96c4;--gold:#ffc83d;--ok:#2ee59d;--bad:#ff5c7a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.top{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;flex:1}.tabs{display:flex;gap:6px;flex-wrap:wrap}
+button,input,select{font:inherit;border-radius:10px;border:1px solid var(--line);background:#0e1530;color:var(--tx);padding:9px 12px}
+button{cursor:pointer}button.on,button.p{background:var(--gold);color:#1a1200;border-color:var(--gold);font-weight:700}
+button.ok{background:#2ee59d22;color:var(--ok);border-color:var(--ok)}button.no{background:#ff5c7a22;color:var(--bad);border-color:var(--bad)}
+main{padding:20px;max-width:1100px;margin:auto}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.c b{display:block;font-size:24px;color:var(--gold)}
+.c span{color:var(--mut);font-size:12px}table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #ffffff10}th{color:var(--mut);font-weight:600;font-size:12px}
+.wrapx{overflow-x:auto;margin-bottom:18px}.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--card);padding:16px;border-radius:14px;border:1px solid var(--line);margin-bottom:18px}
+.hide{display:none}.login{max-width:340px;margin:12vh auto;padding:20px}.login input{width:100%;margin:6px 0}
+.tag{padding:2px 8px;border-radius:99px;font-size:11px;background:#ffffff14}.live{display:inline-block;width:8px;height:8px;background:var(--ok);border-radius:50%;margin-right:6px}
+h2{margin:18px 0 10px;font-size:16px}
+</style></head><body>
+<div id="L" class="login"><h1>Admin sign in</h1><input id="e" placeholder="Email"><input id="p" type="password" placeholder="Password"><div id="le" style="color:var(--bad);min-height:18px"></div><button class="p" style="width:100%" onclick="go()">Sign in</button></div>
+<div id="A" class="hide">
+<div class="top"><h1>🏆 Admin Panel</h1><div class="tabs" id="tabs"></div><a href="/" style="color:var(--mut)">User app</a><button onclick="localStorage.removeItem('t');location.reload()">Sign out</button></div>
+<main id="m"></main></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let T=localStorage.getItem('t'),tab='dash',ws=null;
+async function api(p,o={}){const r=await fetch('/api'+p,{method:o.method||'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+T},body:o.body?JSON.stringify(o.body):undefined});
+ const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Error');return d}
+async function go(){try{const d=await (await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('#e').value,password:$('#p').value})})).json();
+ if(!d.token)throw new Error(d.detail||'Failed');T=d.token;localStorage.setItem('t',T);init()}catch(e){$('#le').textContent=e.message}}
+async function init(){if(!T)return;try{await api('/admin/stats')}catch{$('#le').textContent=T?'Not an admin account':'';return}
+ $('#L').classList.add('hide');$('#A').classList.remove('hide');
+ $('#tabs').innerHTML=[['dash','Dashboard'],['contests','Contests'],['live','Live Top 20'],['pay','Payments'],['cheat','Anti-cheat']].map(([k,v])=>`<button data-k="${k}" onclick="sel('${k}')">${v}</button>`).join('');sel('dash')}
+function sel(k){tab=k;if(ws){ws.close();ws=null}document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));({dash,contests,live,pay,cheat})[k]()}
+async function dash(){const s=await api('/admin/stats');$('#m').innerHTML=`<div class="cards">${[['Players',s.users],['Revenue (Rs)',s.revenue],['Pending payments',s.pending_payments],['Flagged entries',s.flagged],['Contests',s.contests]].map(([a,b])=>`<div class="c"><b>${b}</b><span>${a}</span></div>`).join('')}</div>`}
+async function contests(){const l=await api('/admin/contests');$('#m').innerHTML=`<h2>New contest</h2><div class="form">
+ <input id="n_t" placeholder="Title (e.g. Honda 70 Draw)"><input id="n_p" placeholder="Prize (e.g. Honda CD 70)"><input id="n_em" placeholder="Emoji" value="🏍️">
+ <input id="n_i" placeholder="Image URL (optional)"><input id="n_f" type="number" placeholder="Entry fee Rs" value="5"><input id="n_a" type="number" placeholder="Attempts" value="3"><input id="n_h" type="number" placeholder="Duration hours" value="72"><button class="p" onclick="mk()">Create & start</button></div>
+ <h2>All contests</h2><div class="wrapx"><table><tr><th>#</th><th>Title</th><th>Status</th><th>Players</th><th>Revenue</th><th>Winner</th><th>Prize</th><th></th></tr>${l.map(c=>`<tr><td>${c.id}</td><td>${esc(c.title)}<br><span class="tag">ends ${new Date(c.end).toLocaleString()}</span></td><td>${c.status}</td><td>${c.participants}</td><td>Rs ${c.revenue}</td><td>${esc(c.winner||'—')}</td>
+ <td>${c.winner?`<select onchange="ps(${c.id},this.value)">${['pending','sent','claimed'].map(s=>`<option ${s===c.prize_status?'selected':''}>${s}</option>`).join('')}</select>`:'—'}</td>
+ <td>${c.status==='live'?`<button class="no" onclick="en(${c.id})">End now</button>`:''}${c.status==='ended'?`<button class="p" onclick="dr(${c.id})">🎲 Pick winner</button>`:''}</td></tr>`).join('')}</table></div>`}
+async function mk(){try{await api('/admin/contests',{method:'POST',body:{title:$('#n_t').value,prize_text:$('#n_p').value,emoji:$('#n_em').value||'🏆',image_url:$('#n_i').value,fee:+$('#n_f').value,attempts:+$('#n_a').value,duration_hours:+$('#n_h').value}});contests()}catch(e){alert(e.message)}}
+async function en(id){if(confirm('End this contest now and lock the Top 20?')){await api(`/admin/contests/${id}/end`,{method:'POST'});contests()}}
+async function dr(id){if(!confirm('Run the provably-fair draw now? This cannot be undone.'))return;try{const r=await api(`/admin/contests/${id}/draw`,{method:'POST'});alert('Winner: '+r.winner.name+' (score '+r.winner.score+')');contests()}catch(e){alert(e.message)}}
+async function ps(id,s){await api(`/admin/contests/${id}/prize`,{method:'POST',body:{status:s}})}
+async function live(){const l=await api('/admin/contests');const c=l.find(x=>x.status!=='upcoming');if(!c){$('#m').innerHTML='<p>No contest yet.</p>';return}
+ $('#m').innerHTML=`<h2><span class="live"></span>${esc(c.title)} · Top 20 (live)</h2><div class="wrapx"><table id="lt"></table></div>`;
+ const draw=r=>$('#lt').innerHTML='<tr><th>Rank</th><th>Player</th><th>Score</th><th>Attempts used</th></tr>'+r.map(x=>`<tr><td>${x.rank}</td><td>${esc(x.name)}</td><td>${x.score}</td><td>${x.attempts_used}</td></tr>`).join('');
+ draw(await (await fetch('/api/contests/'+c.id+'/leaderboard')).json());
+ ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/'+c.id);ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.lb)draw(m.lb)}}
+async function pay(){const l=await api('/admin/payments');$('#m').innerHTML=`<h2>Payments</h2><div class="wrapx"><table><tr><th>When</th><th>Player</th><th>Contest</th><th>Method</th><th>TID</th><th>Rs</th><th>Status</th><th></th></tr>${l.map(p=>`<tr><td>${new Date(p.at).toLocaleString()}</td><td>${esc(p.user)}<br><span class="tag">${esc(p.email)}</span></td><td>${esc(p.contest)}</td><td>${p.method}</td><td><b>${esc(p.txn_id)}</b></td><td>${p.amount}</td><td>${p.status}</td>
+ <td>${p.status==='pending'?`<button class="ok" onclick="dc(${p.id},true)">Approve</button> <button class="no" onclick="dc(${p.id},false)">Reject</button>`:''}</td></tr>`).join('')}</table></div>`}
+async function dc(id,a){try{await api('/admin/payments/'+id,{method:'POST',body:{approve:a}});pay()}catch(e){alert(e.message)}}
+async function cheat(){const l=await api('/admin/contests');if(!l.length){$('#m').innerHTML='<p>No contest.</p>';return}const c=l[0];const r=await api('/admin/entries/'+c.id);
+ $('#m').innerHTML=`<h2>Entries · ${esc(c.title)}</h2><div class="wrapx"><table><tr><th>Player</th><th>Email</th><th>Score</th><th>Attempts</th><th>Status</th><th></th></tr>${r.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${x.score}</td><td>${x.attempts_used}</td><td>${x.flagged?`<span style="color:var(--bad)">flagged: ${esc(x.reason)}</span>`:'ok'}${x.banned?' · banned':''}</td>
+ <td><button class="${x.flagged?'ok':'no'}" onclick="fl(${x.id},${!x.flagged})">${x.flagged?'Restore':'Remove from Top 20'}</button> <button onclick="bn(${x.user_id})">${x.banned?'Unban':'Ban user'}</button></td></tr>`).join('')}</table></div>`}
+async function fl(id,f){await api(`/admin/entries/${id}/flag`,{method:'POST',body:{flagged:f}});cheat()}
+async function bn(id){await api(`/admin/users/${id}/ban`,{method:'POST'});cheat()}
+$('#p').addEventListener('keydown',e=>e.key==='Enter'&&go());init();
+</script></body></html>
