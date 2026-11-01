@@ -63,6 +63,10 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
   <div style="text-align:center;margin:30px 0 20px"><div style="font-size:64px">🏆</div><h1>Top 20 Lucky Draw</h1>
   <p class="mut">Play. Reach the Top 20. One lucky winner takes the prize.</p></div>
   <div class="card">
+    <div id="g_btn" style="display:flex;justify-content:center;min-height:44px"></div>
+    <p class="mut" id="g_hint" style="text-align:center;margin:8px 0">One tap. No password.</p>
+    <a href="#" id="em_link" class="mut hide" style="display:block;text-align:center;margin:10px 0" onclick="$('#emailbox').classList.toggle('hide');return false">Use email instead</a>
+    <div id="emailbox">
     <div class="tabs"><button class="btn sec" id="tl" onclick="authTab('login')">Sign in</button><button class="btn sec" id="tr" onclick="authTab('reg')">Create account</button></div>
     <input id="a_name" placeholder="Display name" class="hide" autocomplete="nickname">
     <input id="a_email" type="email" placeholder="Email" autocomplete="email">
@@ -70,7 +74,7 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
     <input id="a_ref" placeholder="Referral code (optional)" class="hide">
     <div class="err" id="a_err"></div>
     <button class="btn" id="a_go" onclick="doAuth()">Sign in</button>
-    <div id="g_btn" style="margin-top:14px;display:flex;justify-content:center"></div>
+    </div>
   </div>
   <p class="mut" style="text-align:center">18+ only. Entry requires a small fee. Please check that contests like this are permitted in your country.</p>
 </div>
@@ -114,7 +118,7 @@ async function doAuth(){$('#a_err').textContent='';try{
   const d=await api(mode==='reg'?'/auth/register':'/auth/login',{method:'POST',body:b});T=d.token;localStorage.setItem('t',T);boot()}
   catch(e){$('#a_err').textContent=e.message}}
 function logout(){localStorage.removeItem('t');T=null;location.reload()}
-window.onGoogle=async r=>{try{const d=await api('/auth/google',{method:'POST',body:{credential:r.credential}});T=d.token;localStorage.setItem('t',T);boot()}catch(e){$('#a_err').textContent=e.message}};
+window.onGoogle=async r=>{try{const d=await api('/auth/google',{method:'POST',body:{credential:r.credential,ref:new URLSearchParams(location.search).get('ref')}});T=d.token;localStorage.setItem('t',T);boot()}catch(e){$('#a_err').textContent=e.message}};
 
 function show(t){tab=t;['home','play','alerts','me'].forEach(x=>$('#v_'+x).classList.toggle('hide',x!==t));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -138,7 +142,7 @@ function renderHome(){const v=$('#v_home');
    <div class="stats"><div><b>Rs ${C.fee}</b><span class="mut">Entry · ${C.attempts} attempts</span></div><div><b>${C.participants}</b><span class="mut">Players</span></div><div><b>${left}</b><span class="mut">Your attempts</span></div></div>
    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" onclick="openPay()">Pay Rs ${C.fee} · Get ${C.attempts} attempts</button></div>
    <button class="btn sec" style="margin-top:10px" onclick="show('play')">🎮 Play now</button></div>
-   <div class="card"><h3><span class="live"></span>Live Top 20</h3><p class="mut" style="margin:4px 0 8px">Top 20 players at the end qualify. One winner is drawn at random from them.</p><div id="lb">${lbHTML()}</div></div>
+   <div class="card"><h3><span class="live"></span>Live Top 20</h3><p class="mut" style="margin:4px 0 8px">${CFG.draw_mode==='top'?'The #1 player when the timer ends wins. Skill decides.':'Top 20 players at the end qualify. One winner is drawn at random from them.'}</p><div id="lb">${lbHTML()}</div></div>
    <div class="card"><h3>🔒 Fair draw</h3><p class="mut">Before the contest began, we published this fingerprint of our secret draw key. After the draw we reveal the key so anyone can verify the result.</p><code style="word-break:break-all;font-size:11px;color:var(--mut)">${C.seed_commit}</code></div>${pastHTML()}`;
   tickCD()}
 function pastHTML(){const p=window._past||[];return p.length?`<div class="card"><h3>🏅 Past winners</h3>${p.map(x=>`<div class="row"><div class="nm">${esc(x.prize)}</div><div class="sc" style="font-size:14px">${esc(x.winner)}</div><a href="#" style="color:var(--pri);font-size:12px" onclick="showProof(${x.id});return false">proof</a></div>`).join('')}</div>`:''}
@@ -185,7 +189,7 @@ function renderMe(){const link=location.origin+'/?ref='+ME.ref_code;
   <div class="card"><h3>🔔 Notifications</h3><button class="btn sec" onclick="Notification.requestPermission().then(()=>toast('Done'))">Enable browser alerts</button></div>
   ${ME.is_admin?'<a class="btn sec" style="text-align:center;text-decoration:none;margin-bottom:14px" href="/admin">Open Admin Panel</a>':''}
   <button class="btn sec" onclick="logout()">Sign out</button>
-  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) One winner is picked from them using a publicly verifiable random draw. Suspicious scores are removed by anti-cheat.</p></div>`}
+  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) ${CFG.draw_mode==='top'?'The highest score wins.':'One winner is picked from them using a publicly verifiable random draw.'} Suspicious scores are removed by anti-cheat.</p></div>`}
 function share(l){const t='Play Top 20 Lucky Draw and win big! Use my code: '+ME.ref_code;navigator.share?navigator.share({title:'Top 20 Lucky Draw',text:t,url:l}):navigator.clipboard.writeText(t+' '+l).then(()=>toast('Link copied'))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e});
 function installApp(){if(installEv){installEv.prompt()}else toast(/iphone|ipad/i.test(navigator.userAgent)?'Tap Share, then “Add to Home Screen”':'Use your browser menu → “Install app”')}
@@ -194,7 +198,9 @@ async function boot(){try{CFG=await api('/config');if(!T){showAuth();return}
   await refreshMe();$('#auth').classList.add('hide');$('#app').classList.remove('hide');await loadHome();setInterval(async()=>{try{const u=ME.unread;await refreshMe();if(ME.unread>u&&window.Notification&&Notification.permission==='granted'){const n=await api('/notifications');new Notification('Top 20 Lucky Draw',{body:n[0].text,icon:'/icon-192.png'})}}catch{}},30000)}
   catch(e){showAuth()}}
 function showAuth(){$('#app').classList.add('hide');$('#auth').classList.remove('hide');const r=new URLSearchParams(location.search).get('ref');if(r){authTab('reg');$('#a_ref').value=r}else authTab('login');
-  if(CFG.google_client_id){const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:onGoogle});google.accounts.id.renderButton($('#g_btn'),{theme:'filled_black',size:'large',text:'continue_with'})};document.head.appendChild(s)}}
+  if(!CFG.google_client_id){$('#g_btn').classList.add('hide');$('#g_hint').classList.add('hide')}
+  if(CFG.google_client_id){const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:onGoogle});google.accounts.id.renderButton($('#g_btn'),{theme:'filled_black',size:'large',shape:'pill',text:'continue_with',width:300});google.accounts.id.prompt()};
+    $('#emailbox').classList.add('hide');$('#em_link').classList.remove('hide');document.head.appendChild(s)}}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
 boot();
 </script>

@@ -21,6 +21,7 @@ AUTO_APPROVE = os.getenv("AUTO_APPROVE_PAYMENTS", "false").lower() == "true"  # 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 ATTEMPTS_PER_ENTRY = int(os.getenv("ATTEMPTS_PER_ENTRY", "3"))
 GAME_SECONDS = int(os.getenv("GAME_SECONDS", "15"))
+DRAW_MODE = os.getenv("DRAW_MODE", "random")  # "random" = lucky draw among Top 20, "top" = rank #1 wins (pure skill)
 MAX_TAPS_PER_SEC = 14
 PAY = {"jazzcash": os.getenv("JAZZCASH_NUMBER", ""), "easypaisa": os.getenv("EASYPAISA_NUMBER", ""),
        "account_name": os.getenv("PAY_ACCOUNT_NAME", "")}
@@ -272,7 +273,7 @@ class LoginIn(BaseModel):
 @app.get("/api/config")
 def config():
     return {"google_client_id": GOOGLE_CLIENT_ID, "pay": PAY, "game_seconds": GAME_SECONDS,
-            "auto_approve": AUTO_APPROVE}
+            "auto_approve": AUTO_APPROVE, "draw_mode": DRAW_MODE}
 
 
 @app.post("/api/auth/register")
@@ -299,6 +300,7 @@ def login(b: LoginIn, db: Session = Depends(get_db)):
 
 class GoogleIn(BaseModel):
     credential: str
+    ref: Optional[str] = None
 
 
 @app.post("/api/auth/google")
@@ -311,7 +313,7 @@ async def google_login(b: GoogleIn, db: Session = Depends(get_db)):
         raise HTTPException(401, "Google sign-in failed")
     u = db.query(User).filter_by(email=d["email"].lower()).first()
     if not u:
-        u = create_user(db, d.get("name", ""), d["email"], secrets.token_urlsafe(16))
+        u = create_user(db, d.get("name", ""), d["email"], secrets.token_urlsafe(16), b.ref)
     if u.banned:
         raise HTTPException(403, "This account is suspended")
     return {"token": make_token(u.id)}
@@ -534,7 +536,7 @@ async def draw(cid: int, _=Depends(admin), db: Session = Depends(get_db)):
     if not cands: raise HTTPException(400, "No eligible players in the Top 20")
     message = f"contest:{c.id}|" + ",".join(f"{r['user_id']}:{r['score']}" for r in cands)
     digest = hmac.new(c.seed.encode(), message.encode(), hashlib.sha256).hexdigest()
-    idx = int(digest, 16) % len(cands)
+    idx = 0 if DRAW_MODE == "top" else int(digest, 16) % len(cands)
     win = cands[idx]
     c.drawn, c.winner_id = True, win["user_id"]
     c.proof = json.dumps({"candidates": cands, "message": message, "digest": digest, "index": idx,

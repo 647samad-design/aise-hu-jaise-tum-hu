@@ -32,3 +32,11 @@ use PostgreSQL via `DATABASE_URL` in production, keep `AUTO_APPROVE_PAYMENTS=fal
 - **Payments:** this version uses manual TID verification by admin. Automated JazzCash/Easypaisa needs a merchant account and their API credentials.
 - **Phone OTP login** needs an SMS provider; **true push notifications** need VAPID keys. Not included.
 - Add rate limiting (e.g. via your reverse proxy) and regular DB backups.
+
+## Google One-Tap setup
+1. Google Cloud Console → APIs & Services → Credentials → Create OAuth client ID → *Web application*.
+2. Authorized JavaScript origins: your site URL (https://yourdomain.com, and http://localhost:8000 for testing).
+3. Put the client ID in `GOOGLE_CLIENT_ID`. The Google button + One-Tap popup then appear first on the login screen.
+
+## Draw mode
+`DRAW_MODE=random` (lucky draw among Top 20) or `DRAW_MODE=top` (highest score wins, skill only).
