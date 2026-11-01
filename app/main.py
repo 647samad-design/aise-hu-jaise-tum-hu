@@ -1,5 +1,5 @@
 """JeetoPrizes - FastAPI backend (single file, easy to deploy)."""
-import os, re, hmac, hashlib, secrets, json, random, statistics
+import os, re, math, hmac, hashlib, secrets, json, random, statistics
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
@@ -26,6 +26,9 @@ MAX_TAPS_PER_SEC = 14
 MIN_TAP_GAP_MS = 30
 GRACE_MS = 150     # network/latency tolerance when matching a tap to a mole
 HOLES = 12
+HIT_R = 13.0       # catch game: hit radius in %-of-width units
+ASPECT = 4 / 3     # catch field height / width
+GAMES = ("mole", "catch")
 CONTACT = {"email": os.getenv("CONTACT_EMAIL", ""), "whatsapp": os.getenv("WHATSAPP_NUMBER", ""),
            "company": os.getenv("COMPANY_NAME", "JeetoPrizes")}
 PAY = {"jazzcash": os.getenv("JAZZCASH_NUMBER", ""), "easypaisa": os.getenv("EASYPAISA_NUMBER", ""),
@@ -82,6 +85,7 @@ class Contest(Base):
     winner_id = Column(Integer, nullable=True)
     proof = Column(Text, default="")
     prize_status = Column(String(12), default="pending")  # pending / sent / claimed
+    game_type = Column(String(12), default="mole")
 
 
 class Entry(Base):
@@ -230,6 +234,55 @@ def score_taps(schedule, taps):
     return max(score, 0), hits, misses, bombs, react
 
 
+def gen_catch(total_ms: int):
+    """Objects fall from the top. Faster, denser and wobblier over time; gems +3, bombs -3."""
+    rnd = random.SystemRandom()
+    out, t = [], 700
+    while t < total_ms - 300:
+        dur = int(max(1100, 2300 - t * 0.06))
+        r = rnd.random()
+        k, pts, d = "fruit", 1, dur
+        if t > 3000 and r < 0.20: k, pts = "bomb", 0
+        elif r < 0.32: k, pts, d = "gold", 3, int(dur * 0.7)
+        x = rnd.uniform(12, 88)
+        a = 0.0 if t < 5000 else rnd.uniform(0, 9)
+        a = max(0.0, min(a, x - 10, 90 - x))
+        out.append({"t": t, "x": round(x, 1), "a": round(a, 1), "p": rnd.randint(700, 1400), "dur": d,
+                    "k": k, "pts": pts, "e": rnd.randrange(4)})
+        t += int(max(280, 720 - t * 0.022) * rnd.uniform(0.7, 1.2))
+    return out
+
+
+def item_pos(it, t):
+    return (it["x"] + it["a"] * math.sin(2 * math.pi * (t - it["t"]) / it["p"]),
+            -10 + (t - it["t"]) / it["dur"] * 115)
+
+
+def catch_score(schedule, taps):
+    used, score, hits, misses, bombs, react, dist = set(), 0, 0, 0, 0, [], []
+    for tp in taps:
+        best, bd = None, 1e9
+        for i, it in enumerate(schedule):
+            if i in used or tp.t < it["t"] or tp.t > it["t"] + it["dur"]: continue
+            x, y = item_pos(it, tp.t)
+            if y < 0 or y > 100: continue          # not visible yet / already gone
+            d = math.hypot(tp.x - x, (tp.y - y) * ASPECT)
+            if d <= HIT_R and d < bd: best, bd = i, d
+        if best is None:
+            misses += 1; score -= 1; continue
+        used.add(best); it = schedule[best]
+        if it["k"] == "bomb": bombs += 1; score -= 3
+        else: hits += 1; score += it["pts"]; react.append(tp.t - it["t"]); dist.append(bd)
+    return max(score, 0), hits, misses, bombs, {"react": react, "dist": dist}
+
+
+def catch_flag(st):
+    if len(st["dist"]) < 10: return None
+    if statistics.mean(st["dist"]) < 1.0: return "pixel-perfect taps"
+    if statistics.pstdev(st["react"]) < 15: return "robotic timing"
+    return None
+
+
 def react_flag(react):
     """Bot-like timing: superhuman or unnaturally uniform reaction times."""
     if len(react) < 10: return None
@@ -276,7 +329,7 @@ def top20(db, cid):
 def contest_out(db, c):
     w = db.get(User, c.winner_id) if c.winner_id else None
     return {"id": c.id, "title": c.title, "prize": c.prize_text, "emoji": c.emoji, "image_url": c.image_url,
-            "fee": c.fee, "attempts": c.attempts, "start": iso(c.start), "end": iso(c.end),
+            "fee": c.fee, "game": c.game_type or "mole", "attempts": c.attempts, "start": iso(c.start), "end": iso(c.end),
             "status": status_of(c), "seed_commit": c.seed_commit, "winner": w.name if w else None,
             "prize_status": c.prize_status,
             "participants": db.query(func.count(Entry.id)).filter(Entry.contest_id == c.id).scalar()}
@@ -498,7 +551,8 @@ def start_game(cid: int, u: User = Depends(player), db: Session = Depends(get_db
     elif u.bonus_attempts > 0: u.bonus_attempts -= 1
     else: raise HTTPException(402, "No attempts left. Pay to get more.")
     e.attempts_used += 1
-    sch = gen_schedule(GAME_SECONDS * 1000)
+    c_game = c.game_type or "mole"
+    sch = gen_catch(GAME_SECONDS * 1000) if c_game == "catch" else gen_schedule(GAME_SECONDS * 1000)
     s = GameSession(token=secrets.token_urlsafe(16), user_id=u.id, contest_id=cid, schedule=json.dumps(sch))
     db.add(s); db.commit()
     return {"session": s.token, "seconds": GAME_SECONDS, "schedule": sch}
@@ -506,7 +560,9 @@ def start_game(cid: int, u: User = Depends(player), db: Session = Depends(get_db
 
 class Tap(BaseModel):
     t: int
-    h: int
+    h: int = -1
+    x: float = 0.0
+    y: float = 0.0
 
 
 class SubmitIn(BaseModel):
@@ -527,12 +583,18 @@ async def submit(b: SubmitIn, u: User = Depends(player), db: Session = Depends(g
     if elapsed < GAME_SECONDS - 1.5: bad = "finished too fast"
     elif elapsed > GAME_SECONDS + 90: bad = "session expired"
     elif len(taps) > GAME_SECONDS * MAX_TAPS_PER_SEC: bad = "inhuman tap count"
-    elif any(t.h < 0 or t.h >= HOLES or t.t < 0 or t.t > GAME_SECONDS * 1000 + 1500 for t in taps): bad = "invalid taps"
+    elif (any(t.t < 0 or t.t > GAME_SECONDS * 1000 + 1500 for t in taps) or
+          any((t.x < -5 or t.x > 105 or t.y < -5 or t.y > 105) if c.game_type == "catch" else (t.h < 0 or t.h >= HOLES) for t in taps)):
+        bad = "invalid taps"
     elif any(b2.t - a.t < MIN_TAP_GAP_MS for a, b2 in zip(taps, taps[1:])): bad = "inhuman tap speed"
     score = hits = misses = bombs = 0
     if not bad:
-        score, hits, misses, bombs, react = score_taps(json.loads(s.schedule), taps)
-        bad = react_flag(react)
+        if c.game_type == "catch":
+            score, hits, misses, bombs, st = catch_score(json.loads(s.schedule), taps)
+            bad = catch_flag(st)
+        else:
+            score, hits, misses, bombs, react = score_taps(json.loads(s.schedule), taps)
+            bad = react_flag(react)
     if bad:
         e.flagged, e.flag_reason = True, bad
         db.commit()
@@ -592,6 +654,7 @@ class ContestIn(BaseModel):
     fee: int
     attempts: int = ATTEMPTS_PER_ENTRY
     duration_hours: float = 72
+    game_type: str = "mole"
 
 
 @app.get("/api/admin/stats")
@@ -605,9 +668,10 @@ def stats(_=Depends(admin), db: Session = Depends(get_db)):
 
 @app.post("/api/admin/contests")
 def create_contest(b: ContestIn, _=Depends(admin), db: Session = Depends(get_db)):
+    if b.game_type not in GAMES: raise HTTPException(400, "Unknown game")
     seed = secrets.token_hex(32)
     c = Contest(title=b.title, prize_text=b.prize_text, emoji=b.emoji, image_url=b.image_url, fee=b.fee,
-                attempts=b.attempts, start=now(), end=now() + timedelta(hours=b.duration_hours), seed=seed,
+                attempts=b.attempts, game_type=b.game_type, start=now(), end=now() + timedelta(hours=b.duration_hours), seed=seed,
                 seed_commit=hashlib.sha256(seed.encode()).hexdigest())
     db.add(c); db.commit()
     return contest_out(db, c)

@@ -62,6 +62,11 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
 .hole .m{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;transform:translateY(110%);transition:transform .08s}
 .hole .m.up{transform:none}.hole.good{box-shadow:0 0 22px var(--ok)}.hole.bad{box-shadow:0 0 22px var(--bad)}
 .legal{text-align:center;font-size:12px;color:var(--mut);margin:14px 0}.legal a{color:var(--mut)}
+.field{position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:18px;margin:12px 0;touch-action:none;user-select:none;
+background:linear-gradient(180deg,#14214d,#0e1530 60%,#1b2447);border:1px solid var(--line)}
+.it{position:absolute;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;font-size:calc(var(--u)*13);pointer-events:none;will-change:left,top}
+.fx{position:absolute;transform:translate(-50%,-50%);font-weight:900;pointer-events:none;animation:fx .45s forwards}
+@keyframes fx{to{opacity:0;margin-top:-40px}}
 </style>
 </head>
 <body>
@@ -157,7 +162,7 @@ function renderHome(){const v=$('#v_home');
   const left=(ME_E?.attempts_left||0)+ME.bonus_attempts;
   v.innerHTML=`<div class="card hero"><span class="pill ${C.status==='live'?'':'off'}">${C.status==='live'?'● LIVE':C.status.toUpperCase()}</span>
    <div style="margin:10px 0">${C.image_url?`<img src="${esc(C.image_url)}" alt="">`:`<div class="em">${esc(C.emoji)}</div>`}</div>
-   <h2>${esc(C.title)}</h2><p class="mut">Prize: <b style="color:var(--gold)">${esc(C.prize)}</b></p>
+   <h2>${esc(C.title)}</h2><p class="mut">🎮 ${GAMES[C.game||'mole'].name}</p><p class="mut">Prize: <b style="color:var(--gold)">${esc(C.prize)}</b></p>
    <div class="cd" id="cd"></div>
    <div class="stats"><div><b>Rs ${C.fee}</b><span class="mut">Entry · ${C.attempts} attempts</span></div><div><b>${C.participants}</b><span class="mut">Players</span></div><div><b>${left}</b><span class="mut">Your attempts</span></div></div>
    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" onclick="openPay()">Pay Rs ${C.fee} · Get ${C.attempts} attempts</button></div>
@@ -181,14 +186,35 @@ async function submitPay(){try{const d=await api(`/contests/${C.id}/pay`,{method
 function renderPlay(){const v=$('#v_play');if(!C||C.status!=='live'){v.innerHTML='<div class="card hero"><div class="em">🎮</div><h2>No live contest</h2></div>';return}
   const left=(ME_E?.attempts_left||0)+ME.bonus_attempts;
   v.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><div><div class="mut">Your best</div><b style="font-size:24px;color:var(--gold)">${ME_E?.best||0}</b></div><div style="text-align:right"><div class="mut">Attempts left</div><b style="font-size:24px">${left}</b></div></div>
-  <div id="gbox"><p class="mut" style="margin:14px 0">Whack the moles as fast as you can for ${CFG.game_seconds} seconds. They get faster, golden moles pay more, and bombs and misses cost you points.</p>
+  <div id="gbox"><p class="mut" style="margin:14px 0">${GAMES[C.game||'mole'].how()}</p>
   <button class="btn" onclick="startGame()" ${left?'':'disabled'}>${left?'▶ Start attempt':'No attempts left'}</button>
   ${left?'':'<button class="btn sec" style="margin-top:10px" onclick="openPay()">Get more attempts</button>'}</div></div>`}
-const GRACE=150;
+const GAMES={mole:{name:'Whack-a-Mole',how:()=>`Whack the moles as fast as you can for ${CFG.game_seconds} seconds. They get faster, golden moles pay more, and bombs and misses cost you points.`},
+ catch:{name:'Fruit Catch',how:()=>`Fruits fall from the top. Tap them to catch them before they drop. Gems pay +3, bombs cost −3, missed taps cost −1. It gets faster and trickier for ${CFG.game_seconds} seconds.`}};
+const GRACE=150,HIT_R=13,FRUIT=['🍎','🍊','🍇','🍉'];
+function ipos(it,t){return{x:it.x+it.a*Math.sin(2*Math.PI*(t-it.t)/it.p),y:-10+(t-it.t)/it.dur*115}}
+function cMirror(sch,used,tp){let bi=-1,bd=1e9;sch.forEach((it,k)=>{if(used.has(k)||tp.t<it.t||tp.t>it.t+it.dur)return;const q=ipos(it,tp.t);if(q.y<0||q.y>100)return;
+  const d=Math.hypot(tp.x-q.x,(tp.y-q.y)*4/3);if(d<=HIT_R&&d<bd){bd=d;bi=k}});if(bi<0)return{d:-1,k:'miss'};used.add(bi);const it=sch[bi];return it.k==='bomb'?{d:-3,k:'bomb'}:{d:it.pts,k:it.k}}
+function startCatch(s){const sch=s.schedule,total=s.seconds*1000;
+  $('#gbox').innerHTML=`<div class="big" id="gs">0</div><div class="mut" style="text-align:center" id="gt">Get ready…</div><div class="field" id="fld"></div><p class="mut" style="text-align:center">🍎 +1 · 💎 +3 · 💣 −3 · miss −1</p>`;
+  const fld=$('#fld');fld.style.setProperty('--u',fld.clientWidth/100+'px');
+  const els=sch.map(it=>{const e=document.createElement('div');e.className='it';e.textContent=it.k==='bomb'?'💣':it.k==='gold'?'💎':FRUIT[it.e%4];e.style.display='none';fld.appendChild(e);return e});
+  let n=3;$('#gt').textContent='Starting in '+n;
+  const cd=setInterval(()=>{n--;if(n>0)$('#gt').textContent='Starting in '+n;else{clearInterval(cd);run()}},1000);
+  function run(){const taps=[],used=new Set();let raw=0,over=false;const t0=performance.now();
+    fld.addEventListener('pointerdown',e=>{e.preventDefault();if(over)return;const r=fld.getBoundingClientRect();
+      const tp={t:Math.round(performance.now()-t0),x:Math.round((e.clientX-r.left)/r.width*1000)/10,y:Math.round((e.clientY-r.top)/r.height*1000)/10};
+      taps.push(tp);const m=cMirror(sch,used,tp);raw+=m.d;$('#gs').textContent=Math.max(0,raw);
+      const f=document.createElement('div');f.className='fx';f.textContent=m.d>0?'+'+m.d:m.d;f.style.cssText+=`left:${tp.x}%;top:${tp.y}%;color:${m.d>0?'#2ee59d':'#ff5c7a'}`;fld.appendChild(f);setTimeout(()=>f.remove(),450);
+      navigator.vibrate&&navigator.vibrate(m.d>0?8:25)});
+    (function loop(){if(over)return;const now=performance.now()-t0;
+      sch.forEach((it,k)=>{const e=els[k];if(used.has(k)||now<it.t||now>it.t+it.dur){e.style.display='none';return}const q=ipos(it,now);e.style.display='grid';e.style.left=q.x+'%';e.style.top=q.y+'%'});
+      $('#gt').textContent=Math.max(0,Math.ceil((total-now)/1000))+'s';
+      if(now>=total){over=true;finish(taps)}else requestAnimationFrame(loop)})()}}
 function mirror(sch,used,tp){const i=sch.findIndex((sp,k)=>!used.has(k)&&sp.h===tp.h&&tp.t>=sp.t&&tp.t<=sp.t+sp.dur+GRACE);if(i<0)return{d:-1,k:'miss'};used.add(i);const sp=sch[i];return sp.k==='bomb'?{d:-3,k:'bomb'}:{d:sp.pts,k:sp.k}}
 const FACE={mole:'🐹',gold:'🌟',bomb:'💣'};
 async function startGame(){try{
-  const s=await api(`/contests/${C.id}/start`,{method:'POST'});sess=s.session;const sch=s.schedule,total=s.seconds*1000;
+  const s=await api(`/contests/${C.id}/start`,{method:'POST'});sess=s.session;if(C.game==='catch'){startCatch(s);return}const sch=s.schedule,total=s.seconds*1000;
   $('#gbox').innerHTML=`<div class="big" id="gs">0</div><div class="mut" style="text-align:center" id="gt">Get ready…</div>
    <div class="holes">${[...Array(12)].map((_,i)=>`<button class="hole"><span class="m"></span></button>`).join('')}</div>
    <p class="mut" style="text-align:center">🐹 +1 · 🌟 +3 · 💣 −3 · miss −1</p>`;
@@ -225,7 +251,7 @@ function renderMe(){const link=location.origin+'/?ref='+ME.ref_code;
   ${CFG.contact?.whatsapp?`<a class="btn sec" style="text-align:center;text-decoration:none;margin-bottom:10px" target="_blank" href="https://wa.me/${CFG.contact.whatsapp.replace(/\D/g,'')}">💬 WhatsApp support</a>`:''}
   <button class="btn sec" onclick="logout()">Sign out</button>
   <p class="legal"><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/rules">Contest Rules</a></p>
-  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play Whack-a-Mole to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) ${CFG.draw_mode==='top'?'The highest score wins.':'One winner is picked from them using a publicly verifiable random draw.'} Suspicious scores are removed by anti-cheat.</p></div>`}
+  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play the contest game to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) ${CFG.draw_mode==='top'?'The highest score wins.':'One winner is picked from them using a publicly verifiable random draw.'} Suspicious scores are removed by anti-cheat.</p></div>`}
 function share(l){const t='Play JeetoPrizes and win big! Use my code: '+ME.ref_code;navigator.share?navigator.share({title:'JeetoPrizes',text:t,url:l}):navigator.clipboard.writeText(t+' '+l).then(()=>toast('Link copied'))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e});
 function installApp(){if(installEv){installEv.prompt()}else toast(/iphone|ipad/i.test(navigator.userAgent)?'Tap Share, then “Add to Home Screen”':'Use your browser menu → “Install app”')}

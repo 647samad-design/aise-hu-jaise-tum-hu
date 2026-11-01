@@ -55,3 +55,11 @@ Without `GOOGLE_CLIENT_ID` (local dev) email/password sign-in is enabled for tes
 `/terms`, `/privacy`, `/rules` are templates. **Have a local lawyer review them** and set `COMPANY_NAME`, `CONTACT_EMAIL`, `WHATSAPP_NUMBER`.
 
 > Existing SQLite databases from earlier versions need to be deleted (new columns were added): remove `app.db` before first run.
+
+## Games (one per contest, chosen in the admin panel)
+| Game | Key | Verification |
+|---|---|---|
+| Whack-a-Mole | `mole` | server schedule, taps replayed on server, reaction-time bot checks |
+| Fruit Catch | `catch` | server schedule, item positions recomputed at tap time, visibility + pixel-perfect/robotic checks |
+
+To add a game: add a generator + scorer + bot-check in `app/main.py`, register it in `GAMES`, and add its UI in `index.html`.
