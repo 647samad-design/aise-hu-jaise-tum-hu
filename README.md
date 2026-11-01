@@ -2,7 +2,7 @@
 
 FastAPI + installable PWA (works in browser and can be installed as an app on Android/iOS).
 
-**Flow:** sign up → pay entry fee (JazzCash/Easypaisa TID) → admin approves → N attempts → play 15s tap game →
+**Flow:** sign up → complete registration (name, mobile, city, 18+) → pay entry fee (JazzCash/Easypaisa TID) → admin approves → N attempts → play 20s Whack-a-Mole →
 server-verified score → live Top 20 (WebSocket) → contest ends → admin presses *Pick winner* →
 provably-fair draw among Top 20.
 
@@ -40,3 +40,18 @@ use PostgreSQL via `DATABASE_URL` in production, keep `AUTO_APPROVE_PAYMENTS=fal
 
 ## Draw mode
 `DRAW_MODE=random` (lucky draw among Top 20) or `DRAW_MODE=top` (highest score wins, skill only).
+
+## Game: Whack-a-Mole (server-verified)
+The server generates a random mole schedule per attempt (faster and denser over time, golden moles +3, bombs -3, misses -1).
+The phone only sends taps; the server replays them to compute the score, rejects impossible tap speeds and flags
+superhuman or robotic reaction times for admin review. Flagged scores stay off the leaderboard until an admin restores them.
+
+## Login & registration
+Production (`GOOGLE_CLIENT_ID` set): Google One-Tap only. After the first sign-in the player completes a short registration
+(name, mobile number, city, 18+ and terms). No OTP; one mobile number per account. Admins and winners are contacted via that number.
+Without `GOOGLE_CLIENT_ID` (local dev) email/password sign-in is enabled for testing.
+
+## Legal pages
+`/terms`, `/privacy`, `/rules` are templates. **Have a local lawyer review them** and set `COMPANY_NAME`, `CONTACT_EMAIL`, `WHATSAPP_NUMBER`.
+
+> Existing SQLite databases from earlier versions need to be deleted (new columns were added): remove `app.db` before first run.

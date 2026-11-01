@@ -56,6 +56,12 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
 .hide{display:none!important}
 .note{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff0d;font-size:14px}.note.un{font-weight:700}
 .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);padding:10px 18px;border-radius:99px;z-index:20;font-size:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:14px;color:var(--mut)}.chk input{width:auto;margin:3px 0}.chk a{color:var(--pri)}
+.holes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.hole{aspect-ratio:1.15;border-radius:50%/40%;background:radial-gradient(ellipse at 50% 85%,#000 0,#1a1208 55%,#3a2a14 100%);border:3px solid #5a4020;overflow:hidden;position:relative;touch-action:manipulation;padding:0;transition:box-shadow .12s}
+.hole .m{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;transform:translateY(110%);transition:transform .08s}
+.hole .m.up{transform:none}.hole.good{box-shadow:0 0 22px var(--ok)}.hole.bad{box-shadow:0 0 22px var(--bad)}
+.legal{text-align:center;font-size:12px;color:var(--mut);margin:14px 0}.legal a{color:var(--mut)}
 </style>
 </head>
 <body>
@@ -65,7 +71,7 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
   <div class="card">
     <div id="g_btn" style="display:flex;justify-content:center;min-height:44px"></div>
     <p class="mut" id="g_hint" style="text-align:center;margin:8px 0">One tap. No password.</p>
-    <a href="#" id="em_link" class="mut hide" style="display:block;text-align:center;margin:10px 0" onclick="$('#emailbox').classList.toggle('hide');return false">Use email instead</a>
+    
     <div id="emailbox">
     <div class="tabs"><button class="btn sec" id="tl" onclick="authTab('login')">Sign in</button><button class="btn sec" id="tr" onclick="authTab('reg')">Create account</button></div>
     <input id="a_name" placeholder="Display name" class="hide" autocomplete="nickname">
@@ -76,7 +82,21 @@ nav .bd{position:absolute;top:0;right:28%;background:var(--bad);color:#fff;borde
     <button class="btn" id="a_go" onclick="doAuth()">Sign in</button>
     </div>
   </div>
-  <p class="mut" style="text-align:center">18+ only. Entry requires a small fee. Please check that contests like this are permitted in your country.</p>
+  <p class="legal">18+ only · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/rules">Contest Rules</a></p>
+</div>
+
+<div id="reg" class="wrap hide">
+  <div style="text-align:center;margin:26px 0 14px"><div style="font-size:54px">📝</div><h1>Complete registration</h1>
+  <p class="mut">So we can contact you if you win. No OTP needed.</p></div>
+  <div class="card">
+    <input id="r_name" placeholder="Full name" autocomplete="name">
+    <input id="r_phone" type="tel" inputmode="numeric" placeholder="Mobile number (03XXXXXXXXX)" autocomplete="tel">
+    <input id="r_city" placeholder="City" autocomplete="address-level2">
+    <label class="chk"><input type="checkbox" id="r_age"><span>I am 18 years or older</span></label>
+    <label class="chk"><input type="checkbox" id="r_terms"><span>I accept the <a href="/terms" target="_blank">Terms</a>, <a href="/privacy" target="_blank">Privacy Policy</a> and <a href="/rules" target="_blank">Contest Rules</a></span></label>
+    <div class="err" id="r_err"></div>
+    <button class="btn" onclick="saveReg()">Continue</button>
+  </div>
 </div>
 
 <div id="app" class="hide">
@@ -118,7 +138,7 @@ async function doAuth(){$('#a_err').textContent='';try{
   const d=await api(mode==='reg'?'/auth/register':'/auth/login',{method:'POST',body:b});T=d.token;localStorage.setItem('t',T);boot()}
   catch(e){$('#a_err').textContent=e.message}}
 function logout(){localStorage.removeItem('t');T=null;location.reload()}
-window.onGoogle=async r=>{try{const d=await api('/auth/google',{method:'POST',body:{credential:r.credential,ref:new URLSearchParams(location.search).get('ref')}});T=d.token;localStorage.setItem('t',T);boot()}catch(e){$('#a_err').textContent=e.message}};
+window.onGoogle=async r=>{try{const d=await api('/auth/google',{method:'POST',body:{credential:r.credential,ref:localStorage.getItem('ref')}});T=d.token;localStorage.setItem('t',T);boot()}catch(e){$('#a_err').textContent=e.message}};
 
 function show(t){tab=t;['home','play','alerts','me'].forEach(x=>$('#v_'+x).classList.toggle('hide',x!==t));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -161,46 +181,64 @@ async function submitPay(){try{const d=await api(`/contests/${C.id}/pay`,{method
 function renderPlay(){const v=$('#v_play');if(!C||C.status!=='live'){v.innerHTML='<div class="card hero"><div class="em">🎮</div><h2>No live contest</h2></div>';return}
   const left=(ME_E?.attempts_left||0)+ME.bonus_attempts;
   v.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><div><div class="mut">Your best</div><b style="font-size:24px;color:var(--gold)">${ME_E?.best||0}</b></div><div style="text-align:right"><div class="mut">Attempts left</div><b style="font-size:24px">${left}</b></div></div>
-  <div id="gbox"><p class="mut" style="margin:14px 0">Tap the glowing tile as many times as you can in ${CFG.game_seconds} seconds. Wrong taps don't count.</p>
+  <div id="gbox"><p class="mut" style="margin:14px 0">Whack the moles as fast as you can for ${CFG.game_seconds} seconds. They get faster, golden moles pay more, and bombs and misses cost you points.</p>
   <button class="btn" onclick="startGame()" ${left?'':'disabled'}>${left?'▶ Start attempt':'No attempts left'}</button>
   ${left?'':'<button class="btn sec" style="margin-top:10px" onclick="openPay()">Get more attempts</button>'}</div></div>`}
-async function startGame(){try{const s=await api(`/contests/${C.id}/start`,{method:'POST'});sess=s.session;hits=[];let secs=s.seconds;
-  $('#gbox').innerHTML=`<div class="big" id="gs">0</div><div class="mut" style="text-align:center" id="gt">${secs}s</div><div class="grid">${[...Array(9)].map((_,i)=>`<button class="tile" data-i="${i}"></button>`).join('')}</div>`;
-  let act=Math.floor(Math.random()*9);const tiles=[...document.querySelectorAll('.tile')];const set=()=>tiles.forEach((t,i)=>t.classList.toggle('on',i===act));set();
-  const t0=performance.now();let over=false;
-  tiles.forEach(t=>t.addEventListener('pointerdown',e=>{e.preventDefault();if(over)return;if(+t.dataset.i===act){hits.push(Math.round(performance.now()-t0));$('#gs').textContent=hits.length;let n;do n=Math.floor(Math.random()*9);while(n===act);act=n;set();navigator.vibrate&&navigator.vibrate(10)}}));
-  const iv=setInterval(()=>{const r=secs-(performance.now()-t0)/1000;$('#gt').textContent=Math.max(0,Math.ceil(r))+'s';if(r<=0){clearInterval(iv);over=true;finish()}},100)}
-  catch(e){toast(e.message);if(/attempts/i.test(e.message))openPay()}}
-async function finish(){$('#gbox').innerHTML='<p class="mut" style="text-align:center">Checking your score…</p>';
-  try{const r=await api('/game/submit',{method:'POST',body:{session:sess,hits}});await refreshMe();await loadHome();
-    $('#gbox').innerHTML=r.flagged?`<div class="big" style="color:var(--bad)">⛔</div><p style="text-align:center">${esc(r.message)}</p>`:
-    `<div class="big">${r.score}</div><p style="text-align:center">${r.counted===false?esc(r.message):r.in_top20?`🔥 You are <b>#${r.rank}</b> in the Top 20!`:'Not in the Top 20 yet. Keep going!'}</p>
+const GRACE=150;
+function mirror(sch,used,tp){const i=sch.findIndex((sp,k)=>!used.has(k)&&sp.h===tp.h&&tp.t>=sp.t&&tp.t<=sp.t+sp.dur+GRACE);if(i<0)return{d:-1,k:'miss'};used.add(i);const sp=sch[i];return sp.k==='bomb'?{d:-3,k:'bomb'}:{d:sp.pts,k:sp.k}}
+const FACE={mole:'🐹',gold:'🌟',bomb:'💣'};
+async function startGame(){try{
+  const s=await api(`/contests/${C.id}/start`,{method:'POST'});sess=s.session;const sch=s.schedule,total=s.seconds*1000;
+  $('#gbox').innerHTML=`<div class="big" id="gs">0</div><div class="mut" style="text-align:center" id="gt">Get ready…</div>
+   <div class="holes">${[...Array(12)].map((_,i)=>`<button class="hole"><span class="m"></span></button>`).join('')}</div>
+   <p class="mut" style="text-align:center">🐹 +1 · 🌟 +3 · 💣 −3 · miss −1</p>`;
+  const holes=[...document.querySelectorAll('.hole')],ms=holes.map(h=>h.firstChild);
+  let n=3;$('#gt').textContent='Starting in '+n;
+  const cd=setInterval(()=>{n--;if(n>0)$('#gt').textContent='Starting in '+n;else{clearInterval(cd);run()}},1000);
+  function run(){const taps=[],used=new Set();let raw=0,over=false;const t0=performance.now();
+    holes.forEach((hl,i)=>hl.addEventListener('pointerdown',e=>{e.preventDefault();if(over)return;
+      const tp={t:Math.round(performance.now()-t0),h:i};taps.push(tp);const r=mirror(sch,used,tp);raw+=r.d;$('#gs').textContent=Math.max(0,raw);
+      hl.classList.add(r.d>0?'good':'bad');setTimeout(()=>hl.classList.remove('good','bad'),180);navigator.vibrate&&navigator.vibrate(r.d>0?8:25)}));
+    (function loop(){if(over)return;const now=performance.now()-t0;const act=Array(12).fill(null);
+      sch.forEach((sp,k)=>{if(!used.has(k)&&now>=sp.t&&now<=sp.t+sp.dur)act[sp.h]=sp});
+      ms.forEach((m,i)=>{const sp=act[i];m.className='m'+(sp?' up':'');m.textContent=sp?FACE[sp.k]:''});
+      $('#gt').textContent=Math.max(0,Math.ceil((total-now)/1000))+'s';
+      if(now>=total){over=true;finish(taps)}else requestAnimationFrame(loop)})()}
+  }catch(e){toast(e.message);if(/attempts/i.test(e.message))openPay()}}
+async function finish(taps){$('#gbox').innerHTML='<p class="mut" style="text-align:center">Checking your score…</p>';
+  try{const r=await api('/game/submit',{method:'POST',body:{session:sess,taps}});await refreshMe();await loadHome();
+    $('#gbox').innerHTML=r.flagged?`<div class="big" style="color:var(--bad)">⏳</div><p style="text-align:center">${esc(r.message)}</p><button class="btn" onclick="renderPlay()">Continue</button>`:
+    `<div class="big">${r.score}</div><p class="mut" style="text-align:center">${r.hits??0} hits · ${r.misses??0} misses · ${r.bombs??0} bombs</p><p style="text-align:center">${r.counted===false?esc(r.message):r.in_top20?`🔥 You are <b>#${r.rank}</b> in the Top 20!`:'Not in the Top 20 yet. Keep going!'}</p>
     <button class="btn" onclick="renderPlay()">Continue</button>`}catch(e){$('#gbox').innerHTML=`<p class="err">${esc(e.message)}</p><button class="btn" onclick="renderPlay()">Back</button>`}}
 
 async function loadAlerts(){const n=await api('/notifications');$('#v_alerts').innerHTML=`<h2 style="margin:6px 0 12px">Alerts</h2><div class="card">${n.length?n.map(x=>`<div class="note ${x.read?'':'un'}">${esc(x.text)}</div>`).join(''):'<p class="mut">Nothing yet.</p>'}</div>`;
   if(ME.unread){await api('/notifications/read',{method:'POST'});ME.unread=0;badge()}}
 function badge(){const b=$('#bd');b.textContent=ME.unread;b.classList.toggle('hide',!ME.unread)}
 function renderMe(){const link=location.origin+'/?ref='+ME.ref_code;
-  $('#v_me').innerHTML=`<div class="card"><h2>${esc(ME.name)}</h2><p class="mut">${esc(ME.email)}</p></div>
+  $('#v_me').innerHTML=`<div class="card"><h2>${esc(ME.name)}</h2><p class="mut">${esc(ME.email)} · ${esc(ME.phone||'')}</p></div>
   <div class="card"><h3>🎁 Invite friends</h3><p class="mut">Every friend who joins with your code gives you 1 free attempt (up to 10). Joined so far: ${ME.referral_count}</p>
   <div class="card" style="text-align:center;margin:10px 0"><b style="font-size:26px;letter-spacing:4px">${ME.ref_code}</b></div>
   <button class="btn" onclick="share('${link}')">Share invite link</button></div>
   <div class="card"><h3>📲 Get the app</h3><p class="mut" id="inst_t">Install this app on your phone for one-tap access.</p><button class="btn sec" onclick="installApp()">Install app</button></div>
   <div class="card"><h3>🔔 Notifications</h3><button class="btn sec" onclick="Notification.requestPermission().then(()=>toast('Done'))">Enable browser alerts</button></div>
   ${ME.is_admin?'<a class="btn sec" style="text-align:center;text-decoration:none;margin-bottom:14px" href="/admin">Open Admin Panel</a>':''}
+  ${CFG.contact?.whatsapp?`<a class="btn sec" style="text-align:center;text-decoration:none;margin-bottom:10px" target="_blank" href="https://wa.me/${CFG.contact.whatsapp.replace(/\D/g,'')}">💬 WhatsApp support</a>`:''}
   <button class="btn sec" onclick="logout()">Sign out</button>
-  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) ${CFG.draw_mode==='top'?'The highest score wins.':'One winner is picked from them using a publicly verifiable random draw.'} Suspicious scores are removed by anti-cheat.</p></div>`}
+  <p class="legal"><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/rules">Contest Rules</a></p>
+  <div class="card" style="margin-top:14px"><h3>How it works</h3><p class="mut">1) Pay the small entry fee and receive attempts. 2) Play Whack-a-Mole to set your best score. 3) When the timer ends, the Top 20 players are locked. 4) ${CFG.draw_mode==='top'?'The highest score wins.':'One winner is picked from them using a publicly verifiable random draw.'} Suspicious scores are removed by anti-cheat.</p></div>`}
 function share(l){const t='Play JeetoPrizes and win big! Use my code: '+ME.ref_code;navigator.share?navigator.share({title:'JeetoPrizes',text:t,url:l}):navigator.clipboard.writeText(t+' '+l).then(()=>toast('Link copied'))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e});
 function installApp(){if(installEv){installEv.prompt()}else toast(/iphone|ipad/i.test(navigator.userAgent)?'Tap Share, then “Add to Home Screen”':'Use your browser menu → “Install app”')}
 async function refreshMe(){ME=await api('/me');badge()}
 async function boot(){try{CFG=await api('/config');if(!T){showAuth();return}
-  await refreshMe();$('#auth').classList.add('hide');$('#app').classList.remove('hide');await loadHome();setInterval(async()=>{try{const u=ME.unread;await refreshMe();if(ME.unread>u&&window.Notification&&Notification.permission==='granted'){const n=await api('/notifications');new Notification('JeetoPrizes',{body:n[0].text,icon:'/icon-192.png'})}}catch{}},30000)}
+  await refreshMe();$('#auth').classList.add('hide');if(!ME.profile_done){showReg();return}$('#reg').classList.add('hide');$('#app').classList.remove('hide');await loadHome();setInterval(async()=>{try{const u=ME.unread;await refreshMe();if(ME.unread>u&&window.Notification&&Notification.permission==='granted'){const n=await api('/notifications');new Notification('JeetoPrizes',{body:n[0].text,icon:'/icon-192.png'})}}catch{}},30000)}
   catch(e){showAuth()}}
-function showAuth(){$('#app').classList.add('hide');$('#auth').classList.remove('hide');const r=new URLSearchParams(location.search).get('ref');if(r){authTab('reg');$('#a_ref').value=r}else authTab('login');
+function showReg(){$('#app').classList.add('hide');$('#reg').classList.remove('hide');$('#r_name').value=ME.name||''}
+async function saveReg(){$('#r_err').textContent='';try{await api('/profile',{method:'POST',body:{name:$('#r_name').value,phone:$('#r_phone').value,city:$('#r_city').value,age_ok:$('#r_age').checked,terms_ok:$('#r_terms').checked}});localStorage.removeItem('ref');toast('Welcome aboard!');boot()}catch(e){$('#r_err').textContent=e.message}}
+function showAuth(){$('#app').classList.add('hide');$('#auth').classList.remove('hide');const r=new URLSearchParams(location.search).get('ref');if(r){localStorage.setItem('ref',r);authTab('reg');$('#a_ref').value=r}else authTab('login');
   if(!CFG.google_client_id){$('#g_btn').classList.add('hide');$('#g_hint').classList.add('hide')}
   if(CFG.google_client_id){const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>{google.accounts.id.initialize({client_id:CFG.google_client_id,callback:onGoogle});google.accounts.id.renderButton($('#g_btn'),{theme:'filled_black',size:'large',shape:'pill',text:'continue_with',width:300});google.accounts.id.prompt()};
-    $('#emailbox').classList.add('hide');$('#em_link').classList.remove('hide');document.head.appendChild(s)}}
+    $('#emailbox').classList.add('hide');document.head.appendChild(s)}}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
 boot();
 </script>
